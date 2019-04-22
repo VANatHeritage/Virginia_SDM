@@ -8,7 +8,8 @@ rm(list=ls())
 # set project folder, db, species code, and species reaches filename for this run
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
-model_species <- "chrocumb"
+list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
+model_species <- "hydrmaur"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -16,20 +17,11 @@ loc_scripts <- here()
 loc_model <- here("_data", "species")
 # Modeling database
 nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
-# locations file (presence reaches). Provide full path; File is copied to modeling folder and timestamped.
-nm_presFile <- here("_data", "occurrence", paste0(model_species, ".csv"))
+# locations file (presence reaches). Provide full path.
+nm_presFile <- here("_data", "occurrence", paste0(model_species, ".shp"))
 # map reference boundaries
-nm_refBoundaries = here("_data","other_spatial","feature","US_States.shp") # background grey reference lines in map
-
-# project overview - this appears in the first paragraph of the metadata
-project_overview = "The following metadata describes the SDM for one species of 2,700 included in a Map of Biodiversity Irreplaceability (MoBI) in the continental U.S. developed by NatureServe and the Network of Natural Heritage Programs and funded by ESRI."
-
-# model comment in database
-model_comments = "2km sep distance"
-# comment printed in PDF metadata
-metaData_comments = ""
-# your name
-modeller = "Christopher Tracey"
+#nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
+nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp") # background grey reference lines in map
 
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
 nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_reaches")
@@ -37,6 +29,17 @@ nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background
 nm_huc12 <- c(here("_data","env_vars","tabular", "background.sqlite"), "range_huc12")
 # name of aquatic areas shapefile (for mapping; optional) [Aquatic-only variable]
 nm_aquaArea <- c(here("_data", "env_vars","tabular", "background.sqlite"), "nhdArea")
+
+# project overview - this appears in the first paragraph of the metadata
+project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
+# model comment in database
+model_comments = "database comment from `model_comments`"
+# comment printed in PDF metadata
+metaData_comments = "This is a PDF comment from `metaData_comments`"
+# your name
+modeller = "David Bucklin"
+# project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
+project_blurb <- "Project Blurb from `project_blurb`."
 
 # numeric HUC level to sub-set project area [Aquatic-only variable]. NULL will auto-calculate the level where all presences are in a unique watershed at that level
 huc_level <- NULL
@@ -46,9 +49,7 @@ add_vars = NULL
 # list standard variables to remove from model run
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
-prompt = FALSE
-
-project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
+prompt = T
 
 # set wd and load function
 setwd(loc_scripts)
@@ -64,7 +65,7 @@ source(here("helper", "run_SDM.R"))
 # If picking up from a previous run (after step 1), use Step 2-alt below
 # update the function arguments below as necessary, and run the function
 run_SDM(
-  model_species = model_species, # species code in DB; new folder to create in loc_model if not existing
+  model_species = model_species,
   loc_scripts = loc_scripts, 
   nm_presFile = nm_presFile,
   nm_db_file = nm_db_file, 
@@ -72,8 +73,8 @@ run_SDM(
   nm_bkg = nm_bkg,
   nm_huc12 = nm_huc12,
   nm_aquaArea = nm_aquaArea, ### optional shapefile of all nhd 'area' types w/comid (for plotting model output)
+  nm_refBoundaries = nm_refBoundaries,
   huc_level = huc_level,
-  nm_refBoundaries = nm_refBoundaries, # background grey reference lines in map
   project_overview = project_overview,
   model_comments = model_comments,
   metaData_comments = metaData_comments,
@@ -121,17 +122,13 @@ source(here("helper", "run_SDM.R"))
   # need to provide an input tableCode to nm_presFile 
   # to add/remove variables, begin at step 2
   # to just run new model, begin at step 3 (see next example)
+model_rdata <- gsub(".Rdata", "", max(list.files(here("_data","species",model_species,"outputs","rdata"))))
 run_SDM(
-  begin_step = "3",
-  model_species = "fuscburk",
+  begin_step = "4c",
+  model_species = model_species,
   loc_model = loc_model,
-  nm_presFile = "fuscburk_20190207_221919_prepped"
-  #model_comments = "Testing out model with removed variables.",
-  #remove_vars = "cbnfws"
+  model_rdata = model_rdata
 )
-
-
-
 
 # example pick-up a model run at step 5 (metadata create)
   # if starting at step 4 or later, must provide model run name to model_rdata
@@ -169,7 +166,7 @@ rm(list=ls())
 # so you need to have executed run_SDM in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "chrocumb"
+model_species <- "hydrmaur"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

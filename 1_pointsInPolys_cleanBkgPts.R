@@ -29,7 +29,8 @@ setwd(paste0(loc_model,"/",model_species,"/inputs"))
 # changing to this WD temporarily allows for presence file to be either in presence folder or specified with full path name
 
 # load data, QC ----
-presReaches <- read.csv(nm_presFile)
+# presReaches <- read.csv(nm_presFile)
+presReaches <- st_zm(st_read(nm_presFile))
 
 shpColNms <- names(presReaches)
 desiredCols <- c("UID", "GROUP_ID", "SPECIES_CD", "COMID", "OBSDATE") # , "SNAME", "SCOMNAME", 
@@ -106,20 +107,21 @@ names(presReaches) <- tolower(names(presReaches))
 ###
 # remove reaches from background dataset that have presence of the target species in the reach
 
-# read in the shapefile, get the attribute data
+# This section attaches huc12s and wacomids to presence reaches
 dbEV <- dbConnect(SQLite(),dbname=nm_bkg[1])
-SQLQuery <- paste0("SELECT * FROM ",nm_bkg[2]," WHERE COMID IN ('", paste(presReaches$comid, collapse = "','"),"')") 
+SQLQuery <- paste0("SELECT COMID, huc12, wacomid FROM ",nm_bkg[2]," WHERE COMID IN ('", paste(presReaches$comid, collapse = "','"),"')") 
 shapef <- dbGetQuery(dbEV, SQLQuery)
-SQLQuery <- paste0("SELECT proj4string p FROM lkpCRS WHERE table_name = '", nm_bkg[2], "';") 
-proj4 <- dbGetQuery(dbEV, SQLQuery)$p
+
+# SQLQuery <- paste0("SELECT proj4string p FROM lkpCRS WHERE table_name = '", nm_bkg[2], "';") 
+# proj4 <- dbGetQuery(dbEV, SQLQuery)$p
 # shapef <- st_read(nm_allflowlines)
 names(shapef) <- tolower(names(shapef))
-shapef <- st_sf(shapef[c("comid", "huc12","wacomid")], geometry=st_as_sfc(shapef$wkt), crs=proj4)
+# shapef <- st_sf(shapef[c("comid", "huc12","wacomid")], geometry=st_as_sfc(shapef$wkt), crs=proj4)
 # testcatchments <- shapef@data
 shapef$huc12 <- str_pad(shapef$huc12, 12, pad=0)
 
 # get huc12s, geom
-pres.geom <- merge(shapef, presReaches, by = "comid")
+pres.geom <- merge(presReaches, shapef, by = "comid")
 
 # define project background
 # subset background reaches by HUC2 to prevent predictions into basics where the species is not known to occur
@@ -160,10 +162,10 @@ shapef <- dbGetQuery(dbEV, SQLQuery)
 names(shapef) <- tolower(names(shapef))
 SQLQuery <- paste0("SELECT proj4string p FROM lkpCRS WHERE table_name = '", nm_bkg[2], "';") 
 proj4 <- dbGetQuery(dbEV, SQLQuery)$p
-shapef <- st_sf(shapef[c("comid", "huc12")], geometry = st_as_sfc(shapef$wkt), crs = proj4)
+shapef <- st_zm(st_sf(shapef[c("comid", "huc12")], geometry = st_as_sfc(shapef$wkt), crs = proj4))
 
 # find presence and presence-adjacent reaches by intersection
-bkgd.int <- st_intersects(st_zm(shapef), st_zm(pres.geom) , sparse = F)
+bkgd.int <- st_intersects(shapef, st_buffer(st_union(pres.geom), 30), sparse = F) # remove from bkgd based on 30-m buffer around presences
 bkgd.geom <- shapef[!apply(bkgd.int, 1, FUN = any),]
 if (length(bkgd.geom$geometry) > 10000) {
   bkgd.geom <- bkgd.geom[sort(sample(as.numeric(row.names(bkgd.geom)), size = 10000, replace = F)),]

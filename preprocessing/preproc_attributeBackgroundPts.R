@@ -9,11 +9,12 @@ library(here)
 library(RSQLite)
 
 # path where .tif env. var rasters are stored
-pathToRas <- here("_data","env_vars","raster")
+pathToRas <- here("_data","env_vars","raster","ras")
+pathToRas <- "D:/SDM/Tobacco/env_vars/Tobacco"
 # path to output tables (a database is generated here if it doesn't exist)
 pathToTab <- here("_data","env_vars","tabular")
 # background points table name (this should be already created with preproc_makeBackgroundPoints.R)
-table <- "background_pts_VA"
+table <- "background_VA"
 # lkpEnvVars database
 dbLookup <- dbConnect(SQLite(), here("_data","databases","SDM_lookupAndTracking.sqlite"))
 
@@ -49,13 +50,39 @@ for (n in 1:length(names(envStack))) {
 
 ## Get random points table ----
 db <- dbConnect(SQLite(), paste0(pathToTab, "/", "background.sqlite"))
+#db <- dbConnect(SQLite(), paste0(pathToTab, "/", "background_pletasup.sqlite"))
+
+
+## read in 1 million at a time
+# sql_countRows <- paste0("SELECT COUNT(*) AS c from ", table, ";")
+# countRows <- dbGetQuery(db, sql_countRows)
+# loops <- ceiling(countRows/1000000)
+
+tcrs <- dbGetQuery(db, paste0("SELECT proj4string p from lkpCRS where table_name = '", table, "';"))$p
+
+# get all the points
 bkgd <- dbReadTable(db, table)
 tcrs <- dbGetQuery(db, paste0("SELECT proj4string p from lkpCRS where table_name = '", table, "';"))$p
 samps <- st_sf(bkgd, geometry = st_as_sfc(bkgd$wkt, crs = tcrs))
 
-# extract values
-x <- extract(envStack, samps, method="simple")
-sampsAtt <- as.data.frame(cbind(fid = as.integer(samps$fid), x))
+#### multi-core !
+# https://gis.stackexchange.com/questions/253618/r-multicore-approach-to-extract-raster-values-using-spatial-points
+# Extract values to a data frame - multicore approach
+# First, convert raster stack to list of single raster layers
+# s.list <- unstack(envStack)
+# names(s.list) <- names(envStack)
+# # Now, create a R cluster using all the machine cores minus one
+sfInit(parallel=TRUE, cpus=parallel:::detectCores()-1)
+# Load the required packages inside the cluster
+sfLibrary(raster)
+sfLibrary(sf)
+# Run parallelized 'extract' function and stop cluster
+e.df <- sfSapply(s.list, extract, y=samps, method = "simple")
+sfStop()
+
+DF <- data.frame(e.df)
+allNA <- !apply(DF, 1, function(x) all(is.na(x))) # to remove all-NA samples
+sampsAtt <- as.data.frame(cbind(fid = as.integer(samps$fid[allNA]), DF[allNA,]))
 
 # write to DB
 tp <- as.vector("INTEGER")

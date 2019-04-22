@@ -31,7 +31,7 @@ db <- dbConnect(SQLite(),dbname=nm_db_file)
 set.seed(seed)
 
 # get species info
-SQLquery <- paste("SELECT scientific_name SciName, common_name CommName, sp_code Code, broad_group Type, egt_id, g_rank, rounded_g_rank FROM lkpSpecies WHERE sp_code = '", model_species,"';", sep="")
+SQLquery <- paste("SELECT scientific_name SciName, common_name CommName, sp_code Code, broad_group Type, egt_id, g_rank, rounded_g_rank, s_rank, rounded_s_rank FROM lkpSpecies WHERE sp_code = '", model_species,"';", sep="")
 ElementNames <- as.list(dbGetQuery(db, statement = SQLquery)[1,])
 tblModelInputs <- data.frame(table_code = baseName, EGT_ID = ElementNames$EGT_ID, datetime = as.character(Sys.time()),
                              feat_count = length(df.in$group_id), 
@@ -51,7 +51,8 @@ dbDisconnect(db)
 rm(db)
 
 # get an original list of env-vars for later writing to tblVarsUsed
-envvar_list <- names(df.abs)[names(df.abs) %in% envvar_list] # gets a list of environmental variables
+envvar_list <- names(df.in)[names(df.in) %in% envvar_list] # gets a list of environmental variables
+df.abs <- df.abs[c("comid", "huc12", envvar_list)]
 
 # go through the envar columns and drop any that have NA values
 ### a <- df.in[colSums(is.na(df.in[colnames(df.in) %in% envvar_list])) > 0]

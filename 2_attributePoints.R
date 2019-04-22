@@ -25,7 +25,6 @@ modType <- dbGetQuery(db, SQLQuery)$m
 
 SQLQuery <- paste0("SELECT gridName g FROM lkpEnvVarsAqua WHERE use_",modType," = 1;")
 gridlistSub <- tolower(dbGetQuery(db, SQLQuery)$g)
-gridlistSub <- gridlistSub[-c(1:2)]
 dbDisconnect(db)
 
 ## account for add/remove vars
@@ -61,6 +60,8 @@ dbEV <- dbConnect(SQLite(),dbname=nm_bkg[1])
 SQLQuery <- paste0("SELECT * FROM ",nm_bkg[2],"_att WHERE COMID IN ('", paste(reaches$comid, collapse = "','"),"')") 
 EnvVars <- dbGetQuery(dbEV, SQLQuery)
 names(EnvVars) <- tolower(names(EnvVars))
+# if (!all(gridlistSub %in% names(EnvVars))) stop("Some variables in `lkpEnvVarsAqua` are not in the background variable database.")
+gridlistSub <- gridlistSub[gridlistSub %in% names(EnvVars)] # TESTING LINE - Removes unmatched variables
 EnvVars <- EnvVars[c("comid",gridlistSub)]
 dbDisconnect(dbEV)
 
@@ -84,4 +85,3 @@ write.csv(bkgd.reaches_attributed, paste0("model_input/",baseName,"_bkgd_att.csv
 
 # clean up
 rm(gridlistSub, modType)
-
