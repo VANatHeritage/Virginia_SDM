@@ -114,6 +114,9 @@ sdm.thresh.table$Pts <- paste(round(sdm.thresh.table$Pts/numPts*100, 1),
 ## get grank definition ----
 SQLquery <- paste0("SELECT rank, rankname FROM lkpRankDefinitions where rank = '",ElementNames$rounded_g_rank,"';", sep="")
 grank_desc <- dbGetQuery(db, SQLquery)
+## get grank definition ----
+SQLquery <- paste0("SELECT rank, rankname FROM lkpRankDefinitions where rank = '",ElementNames$rounded_s_rank,"';", sep="")
+srank_desc <- dbGetQuery(db, SQLquery)
 
 # make a url to NatureServe Explorer
 NSurl <- paste("http://explorer.natureserve.org/servlet/NatureServe?searchName=",gsub(" ", "+", ElementNames[[1]], fixed=TRUE), sep="")

@@ -171,45 +171,45 @@ options(op)
 dbDisconnect(db)
 # 
 # ## create all thresholds grid
-# t2 <- sort(unique(allThresh$cutValue))
-# t2 <- t2[!is.na(t2)]
-# # get unique thresholds
-# t3 <- data.frame(cutCodes = unlist(lapply(t2, FUN = function(x) {paste(allThresh$cutCode[allThresh$cutValue == x], collapse = ";")})),
-#                  cutValue = t2,
-#                  order = 1:length(t2))
-# 
-# # load the prediction grid
-# ras <- raster(paste0("model_predictions/", model_run_name, ".tif"))
-# 
-# # reclassify the raster based on the threshold into binary 0/1
-# m <- cbind(
-#   from = c(-Inf, t3$cutValue),
-#   to = c(t3$cutValue, Inf),
-#   becomes = c(0, t3$order)
-# )
-# # reclassify (multi-core try)
-# if (all(c("snow","parallel") %in% installed.packages())) {
-#   try({
-#     cat("Using multi-core processing...\n")
-#     beginCluster(type = "SOCK")
-#     rasrc <- clusterR(ras, reclassify, args = list(rcl = m))
-#   })
-#   try(endCluster())
-#   if (!exists("rasrc")) {
-#     cat("Cluster processing failed. Falling back to single-core processing...\n")
-#     rasrc <- reclassify(ras, m)
-#   }
-# } else {
-#   rasrc <- reclassify(ras, m)
-# }
-# rasrc <- as.factor(rasrc)
-# levels(rasrc) <- merge(levels(rasrc), t3, by.x = "ID", by.y = "order", all.x = T)
-# 
-# outfile <- paste("model_predictions/",model_run_name,"_all_thresholds.tif", sep = "")
-# writeRaster(rasrc, filename=outfile, format="GTiff", overwrite=TRUE, datatype = "INT2U")
-# 
-# #clean up
-# rm(m, rasrc)
+t2 <- sort(unique(allThresh$cutValue))
+t2 <- t2[!is.na(t2)]
+# get unique thresholds
+t3 <- data.frame(cutCodes = unlist(lapply(t2, FUN = function(x) {paste(allThresh$cutCode[allThresh$cutValue == x], collapse = ";")})),
+                 cutValue = t2,
+                 order = 1:length(t2))
+
+# load the prediction grid
+ras <- raster(paste0("model_predictions/", model_run_name, ".tif"))
+
+# reclassify the raster based on the threshold into binary 0/1
+m <- cbind(
+  from = c(-Inf, t3$cutValue),
+  to = c(t3$cutValue, Inf),
+  becomes = c(0, t3$order)
+)
+# reclassify (multi-core try)
+if (all(c("snow","parallel") %in% installed.packages())) {
+  try({
+    cat("Using multi-core processing...\n")
+    beginCluster(type = "SOCK")
+    rasrc <- clusterR(ras, reclassify, args = list(rcl = m))
+  })
+  try(endCluster())
+  if (!exists("rasrc")) {
+    cat("Cluster processing failed. Falling back to single-core processing...\n")
+    rasrc <- reclassify(ras, m)
+  }
+} else {
+  rasrc <- reclassify(ras, m)
+}
+rasrc <- as.factor(rasrc)
+levels(rasrc) <- merge(levels(rasrc), t3, by.x = "ID", by.y = "order", all.x = T)
+
+outfile <- paste("model_predictions/",model_run_name,"_all_thresholds.tif", sep = "")
+writeRaster(rasrc, filename=outfile, format="GTiff", overwrite=TRUE, datatype = "INT2U")
+
+#clean up
+rm(m, rasrc)
 # 
 # ## continuous grid that drops cells below lowest calculated thresh ----
 # # reclassify the raster based on the threshold into Na below thresh

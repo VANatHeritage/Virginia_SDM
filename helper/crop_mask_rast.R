@@ -17,7 +17,7 @@ rm(db)
 
 # now get that info spatially
 nm_range <- nm_HUC_file
-qry <- paste("SELECT * from HUC10 where HUC10 IN ('", paste(hucList, collapse = "', '"), "')", sep = "")
+qry <- paste("SELECT * from HUC10 where HUC_10 IN ('", paste(hucList, collapse = "', '"), "')", sep = "")
 hucRange <- st_zm(st_read(nm_range, query = qry))
 
 # dissolve it
@@ -26,7 +26,7 @@ rangeDissolved <- st_union(hucRange)
 rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(10, km^2))
 # crop to CONUS boundary
 conus <- st_read(nm_refBoundaries)
-rangeClipped <- st_intersection(rangeDissHolesFilled, conus)
+rangeClipped <- st_intersection(st_transform(rangeDissHolesFilled, st_crs(conus)), conus)
 # write out a dissolved version of hucRange for 'study area'
 st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")))
 

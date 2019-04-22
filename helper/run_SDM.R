@@ -29,7 +29,6 @@ run_SDM <- function(
   add_vars = NULL,
   remove_vars = NULL,
   huc_level = NULL,
-  #rubric_default = NULL,
   project_blurb = NULL,
   prompt = FALSE
 ) {
@@ -77,7 +76,6 @@ run_SDM <- function(
       add_vars = add_vars,
       remove_vars = remove_vars,
       baseName = baseName,
-      #rubric_default = rubric_default,
       project_blurb = project_blurb)
   }
   

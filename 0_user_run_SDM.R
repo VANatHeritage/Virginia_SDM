@@ -7,7 +7,8 @@ rm(list=ls())
 # Step 1: Setting for the model run
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
-model_species <- "pletasup"
+list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
+model_species <- "abiefras"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -18,26 +19,25 @@ nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
 # locations file (presence reaches). Provide full path; File is copied to modeling folder and timestamped.
 nm_presFile <- here("_data", "occurrence", paste0(model_species, ".shp"))
 # env vars location [Terrestrial-only variable]
-loc_envVars = here("_data","env_vars","raster", "ras")
+loc_envVars = here("_data","env_vars","raster","ras")
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_bkgPts <- c(here("_data","env_vars","tabular", "background_pletasup.sqlite"), "background_pts")
-
+nm_bkgPts <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_VA")
 # HUC spatial data set (shapefile) that is subsetted and used to define modeling area//range
 nm_HUC_file <- here("_data","other_spatial","feature","HUC10.shp")
 # map reference boundaries
-nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
+#nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
+nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp")
 
 # project overview - this appears in the first paragraph of the metadata
-project_overview = "The following metadata describes the SDM for one species of 2,700 included in a Map of Biodiversity Importance (MoBI) in the continental U.S. developed by NatureServe and the Network of Natural Heritage Programs and funded by ESRI."
-
+project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
 # model comment in database
-model_comments = ""
-
+model_comments = "database comment from `model_comments`"
 # comment printed in PDF metadata
-metaData_comments = ""
-
+metaData_comments = "This is a PDF comment from `metaData_comments`"
 # your name
-modeller = "Tim Howard"
+modeller = "David Bucklin"
+# project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
+project_blurb <- "Project Blurb from `project_blurb`."
 
 # list non-standard variables to add to model run
 add_vars = NULL
@@ -45,8 +45,6 @@ add_vars = NULL
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
 prompt = FALSE
-
-project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
 
 # set wd and load function
 setwd(loc_scripts)
@@ -61,7 +59,7 @@ source(here("helper", "run_SDM.R"))
 # RUN A NEW MODEL (ALL STEPS 1-5)
 
 run_SDM(
-  model_species = model_species, # species code in DB; new folder to create in loc_model if not existing
+  model_species = model_species,
   loc_scripts = loc_scripts, 
   nm_presFile = nm_presFile,
   nm_db_file = nm_db_file, 
@@ -69,14 +67,13 @@ run_SDM(
   loc_envVars = loc_envVars,
   nm_bkgPts = nm_bkgPts,
   nm_HUC_file = nm_HUC_file,
-  nm_refBoundaries = nm_refBoundaries, # background grey refernce lines in map
+  nm_refBoundaries = nm_refBoundaries,
   project_overview = project_overview,
   model_comments = model_comments,
   metaData_comments = metaData_comments,
   modeller = modeller,
   add_vars = add_vars,
   remove_vars = remove_vars,
-  #rubric_default = rubric_default,
   project_blurb = project_blurb,
   prompt = prompt
 )
@@ -106,7 +103,7 @@ library(here)
 rm(list=ls())
 
 # set project folder and species code for this run
-model_species <- "amazviri"
+model_species <- "abiefras"
 loc_model <- here("_data", "species")
 
 # set wd and load function
@@ -118,15 +115,13 @@ source(here("helper", "run_SDM.R"))
   # need to provide an input tableCode to nm_presFile 
   # to add/remove variables, begin at step 2
   # to just run new model, begin at step 3 (see next example)
+model_rdata <- gsub(".Rdata", "", max(list.files(here("_data","species",model_species,"outputs","rdata"))))
 run_SDM(
   begin_step = "4c",
-  model_species = "amazviri",
+  model_species = model_species,
   loc_model = loc_model,
-  model_rdata = max(list.files(here("_data","species",model_species,"outputs","rdata")))
+  model_rdata = model_rdata
 )
-
-
-
 
 # example pick-up a model run at step 5 (metadata create)
   # if starting at step 4 or later, must provide model run name to model_rdata
@@ -164,7 +159,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "pletasup"
+model_species <- "aneushar"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

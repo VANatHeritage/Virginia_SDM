@@ -19,8 +19,7 @@ setwd(loc_model)
 setwd(paste0(model_species,"/outputs"))
 load(paste0("rdata/", modelrun_meta_data$model_run_name,".Rdata"))
 
-for(i in 1:length(modelrun_meta_data))
-  assign(names(modelrun_meta_data)[i], modelrun_meta_data[[i]])
+for(i in 1:length(modelrun_meta_data)) assign(names(modelrun_meta_data)[i], modelrun_meta_data[[i]])
 
 ## Additional Metadata Comments: get any current documentation ----
 db <- dbConnect(SQLite(),dbname=nm_db_file)
@@ -42,22 +41,32 @@ if (dat.in.db$metadata_comments != newText) {
   dbExecute(db, SQLquery)
 }
 
+### WORKING VA EDITS 2019-04-19
+
 ## update Model Evaluation and Use data (rubric table) ----
 # get most recent data from the tracking DB for two of the rubric table fields that may vary
-cn <- odbcConnect("mobi_spp_tracking")
-sql <- paste0("SELECT FinalSppList.ELEMENT_GLOBAL_ID, LocalityData.pres_dat_eval_rubric, 
-              LocalityData.bison_use, LocalityData.gbif_use, LocalityData.inat_use, 
-              LocalityData.other_use, LocalityData.MJD_sufficient, LocalityData.MJD_only, LocalityData.status
-              FROM FinalSppList INNER JOIN LocalityData ON FinalSppList.ELEMENT_GLOBAL_ID = LocalityData.EGT_ID
-              WHERE (((FinalSppList.ELEMENT_GLOBAL_ID)= ", ElementNames$EGT_ID, "));")
-localityData <- sqlQuery(cn, sql)
-
-sql <- paste0("SELECT Reviewer.EGT_ID, Reviewer.response, Reviewer.date_completed
-              FROM Reviewer
-              WHERE (((Reviewer.EGT_ID)= ", ElementNames$EGT_ID, " ));")
-reviewerData <- sqlQuery(cn, sql)
-close(cn)
-rm(cn)
+mobi <- F
+if (mobi) {
+  cn <- odbcConnect("mobi_spp_tracking")
+  sql <- paste0("SELECT FinalSppList.ELEMENT_GLOBAL_ID, LocalityData.pres_dat_eval_rubric, 
+                LocalityData.bison_use, LocalityData.gbif_use, LocalityData.inat_use, 
+                LocalityData.other_use, LocalityData.MJD_sufficient, LocalityData.MJD_only, LocalityData.status
+                FROM FinalSppList INNER JOIN LocalityData ON FinalSppList.ELEMENT_GLOBAL_ID = LocalityData.EGT_ID
+                WHERE (((FinalSppList.ELEMENT_GLOBAL_ID)= ", ElementNames$EGT_ID, "));")
+  localityData <- sqlQuery(cn, sql)
+  
+  sql <- paste0("SELECT Reviewer.EGT_ID, Reviewer.response, Reviewer.date_completed
+                FROM Reviewer
+                WHERE (((Reviewer.EGT_ID)= ", ElementNames$EGT_ID, " ));")
+  reviewerData <- sqlQuery(cn, sql)
+  close(cn)
+  rm(cn)
+} else{
+  localityData <- data.frame(ELEMENT_GLOBAL_ID=NA, pres_dat_eval_rubric=NA, 
+                             bison_use=0, gbif_use=0, inat_use=0, 
+                             other_use=0, MJD_sufficient=NA, MJD_only=1, status=NA)
+  reviewerData <- data.frame(EGT_ID=NA, response=NA, date_completed=NA)
+}
 
 # fill status if it is NA
 localityData[is.na(localityData$status),"status"] <- "in progress"

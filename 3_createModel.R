@@ -36,7 +36,7 @@ db <- dbConnect(SQLite(),dbname=nm_db_file)
 set.seed(seed)
 
 # get species info
-SQLquery <- paste("SELECT scientific_name SciName, common_name CommName, sp_code Code, broad_group Type, egt_id, g_rank, rounded_g_rank FROM lkpSpecies WHERE sp_code = '", model_species,"';", sep="")
+SQLquery <- paste("SELECT scientific_name SciName, common_name CommName, sp_code Code, broad_group Type, egt_id, g_rank, rounded_g_rank, s_rank, rounded_s_rank FROM lkpSpecies WHERE sp_code = '", model_species,"';", sep="")
 ElementNames <- as.list(dbGetQuery(db, statement = SQLquery)[1,])
 
 tblModelInputs <- data.frame(table_code = baseName, EGT_ID = NA, datetime = as.character(Sys.time()),
@@ -56,7 +56,8 @@ dbDisconnect(db)
 rm(db)
 
 # get an original list of env-vars for later writing to tblVarsUsed
-envvar_list <- names(df.abs)[names(df.abs) %in% envvar_list] # gets a list of environmental variables
+envvar_list <- names(df.in)[names(df.in) %in% envvar_list] # gets a list of environmental variables
+df.abs <- df.abs[envvar_list]
 
 #make sure we don't have any NAs
 df.in <- df.in[complete.cases(df.in[,!names(df.in) %in% c("obsdate","date")]),]  # to ensure missing dates are not excluding records
@@ -320,8 +321,8 @@ if(length(group$vals)>1){
 		   # apply the subset. do.call is needed so selStr can be evaluated correctly
 		  trSet <- do.call("subset",list(df.in2, trSelStr))
 		  evSet[[i]] <- do.call("subset",list(df.in2, evSelStr))
-		   # use sample to grab a random subset from the background points
-		  BGsampSz <- nrow(evSet[[i]])
+		   # use sample to grab a random subset from the background points (max at 25% of the full set).
+		  BGsampSz <- min(nrow(evSet[[i]]), round(nrow(df.abs2)*0.25))
 		  evSetBG <- df.abs2[sample(nrow(df.abs2), BGsampSz , replace = FALSE, prob = NULL),]
 		   # get the other portion for the training set
 		  TrBGsamps <- attr(evSetBG, "row.names") #get row.names as integers

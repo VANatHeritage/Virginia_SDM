@@ -15,6 +15,7 @@
     urlcolor=cyan,
 }
 \usepackage{caption} %for managing table captions
+\captionsetup{justification=raggedright,singlelinecheck=false}
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{multirow}
 \usepackage{array}
@@ -39,10 +40,11 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
 
 \noindent
 \begin{minipage}[b]{4.75in}   %everything in this minipage will be adjacent, left of the thermometer
-  \LARGE \textit{\Sexpr{as.character(ElementNames[[1]])}} \\ 
+  \LARGE \textit{\Sexpr{as.character(ElementNames$SciName)}} \\ 
   \normalsize Species Distribution Model (SDM) assessment metrics and metadata \\
-  Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames[[2]])}}  \\
-  Grank: \Sexpr{ paste(as.character(ElementNames[[6]])," - ",as.character(grank_desc[[2]]), sep="")}\\
+  Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames$CommName)}}  \\
+  Grank: \Sexpr{ paste(as.character(ElementNames$g_rank)," - ",as.character(grank_desc[[2]]), sep="")}\\
+  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank)," - ",as.character(srank_desc[[2]]), sep="")}\\
   Date: \Sexpr{format(Sys.Date(), "%d %b %Y")} \\  
   Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)})
 \end{minipage}  \hfill   
@@ -427,15 +429,16 @@ clrs <- brewer.pal('Blues',n=nclr)
 
 # figure out size of study area, expand if less than 889km across,
 #  which is 1;5,000,000 when figure is 7 inches wide (which it is here)
-bbox <- bb(studyAreaExtent)
-studyAreaWidth <- bbox$xmax - bbox$xmin
-studyAreaHeight <- bbox$ymax - bbox$ymin
-if(studyAreaWidth < 889000){
-  bbox <- bb(bbox, width = 889000, relative = FALSE)
-  }
-if(studyAreaHeight < 889000){
-  bbox <- bb(bbox, height = 889000, relative = FALSE)
-  }
+bbox <- bb(referenceBoundaries) # use state outline as fixed boundary
+# bbox <- bb(studyAreaExtent)
+# studyAreaWidth <- bbox$xmax - bbox$xmin
+# studyAreaHeight <- bbox$ymax - bbox$ymin
+# if(studyAreaWidth < 889000){
+#   bbox <- bb(bbox, width = 889000, relative = FALSE)
+#   }
+# if(studyAreaHeight < 889000){
+#   bbox <- bb(bbox, height = 889000, relative = FALSE)
+#   }
 
 
 tmap_options(max.raster = c("plot" = 300000, "view" = 100000))
@@ -447,15 +450,17 @@ tmap_mode("plot")
 #basetiles <- read_osm(studyAreaExtent, type = "stamen-toner", ext = 1.1)
 
 ## this is Esri.WorldGrayCanvas
-#mtype <- 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}.png?'
+mtype <- 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}.png?'
 
 ## this is CartoDB.Positron
-mtype <- 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-basetiles <- read_osm(bbox, type = mtype, ext = 1.1)
+mtype <- 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+mtype <- 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png'
+ 
+basetiles <- read_osm(bbox, type = 'esri-topo')#, zoom = 8, type = 'esri-topo') #, ext = 1.01) #type = mtype, ext = 1.1) 
 # plot it
 qtm(basetiles) + 
   tm_shape(ras) + 
-    tm_raster(palette = clrs, title = "modeled suitability",
+    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9,
             labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability")) +   tm_shape(referenceBoundaries) +
     tm_borders(col = "grey", lwd = 1) + 
   tm_shape(studyAreaExtent) + 
@@ -493,12 +498,12 @@ This model was built using a methodology developed through collaboration among t
 \noindent
 \setlength{\fboxsep}{5pt}
 \fbox{
-\begin{minipage}[c]{0.2\linewidth}
-\includegraphics[width=1.0\linewidth]{../../../../../NatureServeLogo}%png logo file at repository root
+\begin{minipage}[c]{0.1\linewidth}
+\includegraphics[width=1.0\linewidth]{../../../../../VANHPLogo}%png logo file at repository root
 \end{minipage}%
-\begin{minipage}[c]{0.75\linewidth}
+\begin{minipage}[c]{0.85\linewidth}
 Please cite this document and its associated SDM as: \\
-NatureServe and Heritage Network Partners. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Arlington, VA with Network partners from VA, PA, and NY.
+Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Virginia Department of Conservation and Recreation - Division of Natural Heritage, Richmond, VA.
 \end{minipage}
 }
 
@@ -544,14 +549,13 @@ NatureServe and Heritage Network Partners. \Sexpr{format(Sys.Date(), "%Y")}. Spe
   \bibitem{LiuEtAl2015} Liu, C., G. Newell, and M. White. 2015. On the selection of 
     thresholds for predicting species occurrence with presence-only data. Ecology and 
     Evolution 6:337–348. 
-  \bibitem{SofaerEtAl2019} Sofaer, H. R., C. S. Jarnevich1, I. S. Pearse, R. L. Smyth, S. Auer, G. L. Cook, T. C. Edwards, Jr., G. F. Guala, T. G. Howard, J. T. Morisette, and H. Hamilton. (In press). The development and delivery of species distribution models to inform decision-making. BioScience.
+  \bibitem{SofaerEtAl2019} Sofaer, H. R., C. S. Jarnevich, I. S. Pearse, R. L. Smyth, S. Auer, G. L. Cook, T. C. Edwards, Jr., G. F. Guala, T. G. Howard, J. T. Morisette, and H. Hamilton. (In press). The development and delivery of species distribution models to inform decision-making. BioScience.
 \end{thebibliography}
 
 \pagebreak
-\noindent
 
 \begin{table}
-\caption{Appendix 1. Descriptions for environmental variables included in model.}
+\caption*{Appendix 1. Descriptions for environmental variables included in model.}
 \resizebox{\textwidth}{!}{
 <<tableFour, results="asis", echo = FALSE>>=
   # For variable descriptions, get variable name, source, description (3 columns)
@@ -559,22 +563,24 @@ addtorow <- list()
 addtorow$pos <- list()
 addtorow$pos[[1]] <- c(0)
 addtorow$command <- c(paste("\\hline \n",sep=""))
-print(xtable(sdm.var.info, label = NULL),
-    include.rownames=FALSE,
+print(xtable(sdm.var.info, label = NULL, caption = NULL),
+    include.rownames=FALSE, 
       sanitize.text = force, add.to.row = addtorow, floating=FALSE)
 @
 }
 \end{table}
 \medskip
 
+\noindent
 Appendix 2. Model details for reproducibility
+\small
 
 \begin{itemize}
     \setlength{\itemsep}{0pt}
     \setlength{\parskip}{0pt}
     \setlength{\parsep}{0pt}
-  \item{All R Scripts are available at \href{https://github.com/HeritageNetwork/Regional_SDM}{github}}
-  \item{The repository version (repo head) used for this run was: \Sexpr{modelrun_meta_data$repo_head}}
+  \item{All R Scripts are available at \href{https://github.com/VANatHeritage/Virginia_SDM}{github}}
+  \item{The repository version (most recent commit SHA-1 hash) used for this run was: \Sexpr{modelrun_meta_data$repo_head}}
   \item{Validation metrics requiring a threshold use MTP (minimum training presence)}
   \item{R version: \Sexpr{modelrun_meta_data$r_version}}
   \item{Random seed for full randomForest model: \Sexpr{modelrun_meta_data$seed}}

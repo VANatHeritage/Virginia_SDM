@@ -21,24 +21,27 @@ raslist.short <- unlist(
 db <- dbConnect(SQLite(),dbname=nm_db_file)
 SQLQuery <- "select gridName, fileName from lkpEnvVars;"
 evs <- dbGetQuery(db, SQLQuery)
-shrtNms <- merge(data.frame(fileName = raslist.short, fullname = raslist, stringsAsFactors = FALSE), evs)
+shrtNms <- merge(data.frame(fileName = raslist.short, path = raslist, fullpath = paste0(loc_envVars, "/", raslist), 
+                            stringsAsFactors = FALSE), evs, all.x = T)
 dbDisconnect(db)
 
-gridlist <- as.list(paste(loc_envVars,shrtNms$fullname,sep = "/"))
-#nm <- substr(shrtNms$fullname,1,nchar(shrtNms$fullname) - 4) # remove .tif extension
-names(gridlist) <- raslist.short
-
-gridlist <- gridlist[order(names(gridlist))]
-names(gridlist) <- shrtNms[order(shrtNms$fileName),"gridName"]
-
-nulls <- gridlist[is.na(names(gridlist))]
-if(length(nulls) > 0){
-  print(nulls)
+# ###
+# gridlist <- as.list(paste(loc_envVars,shrtNms$path,sep = "/"))
+# #nm <- substr(shrtNms$path,1,nchar(shrtNms$path) - 4) # remove .tif extension
+# names(gridlist) <- raslist.short
+# 
+# gridlist <- gridlist[order(names(gridlist))]
+# names(gridlist) <- shrtNms[order(shrtNms$fileName),"gridName"]
+# 
+# nulls <- gridlist[is.na(names(gridlist))]
+#if(length(nulls) > 0){
+if (any(is.na(shrtNms$gridName))) {
+  print(shrtNms$fileName[is.na(shrtNms$gridName)])
   stop("Some grids are not in DB.")
 }
 
 # check to make sure there are no names greater than 10 chars
-nmLen <- unlist(lapply(names(gridlist),nchar))
+nmLen <- nchar(shrtNms$gridName)
 max(nmLen) # if this result is greater than 10, you've got a renegade
 
 # Set working directory to the random points location
@@ -54,10 +57,12 @@ modType <- dbGetQuery(db, SQLQuery)$m
 
 # if modtype is both (B), flip it to A or T
 # what git branch are we on?
-branches <- system("git branch", intern = TRUE)
-activeBranch <- branches[grep("\\*", branches)]
-activeBranch <- sub("\\*", "", activeBranch)
-activeBranch <- gsub(" ", "", activeBranch)
+#branches <- system("git branch", intern = TRUE)
+#activeBranch <- branches[grep("\\*", branches)]
+#activeBranch <- sub("\\*", "", activeBranch)
+#activeBranch <- gsub(" ", "", activeBranch)
+activeBranch <- git2r::repository_head()$name
+
 
 if(modType == "B"){
   if(activeBranch == "terrestrial") modType <- "T"
@@ -103,7 +108,15 @@ if (!is.null(remove_vars)) {
 }
 # remove duplicates, then subset
 gridlistSub <- gridlistSub[!duplicated(gridlistSub),]
-fullL <- gridlist[names(gridlist) %in% tolower(gridlistSub$gridName)]
+# fullL <- gridlist[names(gridlist) %in% tolower(gridlistSub$gridName)]
+fullL1 <- shrtNms[shrtNms$gridName %in% tolower(gridlistSub$gridName),]
+fullL1$subfolder <- unlist(lapply(fullL1$path, FUN = function(x) {
+  s <- strsplit(x, "/")[[1]] 
+  if (length(s) > 1) paste0(s[1],".") else ""}
+))
+fullL <- as.list(fullL1$fullpath)
+names(fullL) <- paste(fullL1$subfolder, fullL1$gridName, sep = "")
+
 
 # Could use this script here crop/mask rasters
 #source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
@@ -111,7 +124,7 @@ fullL <- gridlist[names(gridlist) %in% tolower(gridlistSub$gridName)]
 
 # make grid stack with subset
 envStack <- stack(fullL)
-rm(fullL, gridlistSub, modType, branches, activeBranch)
+rm(fullL, gridlistSub, modType, activeBranch)
 
 # extract raster data to points ----
 
@@ -153,8 +166,8 @@ if (length(tv) > 0) {
     
     # DECIDE IF THERE SHOULD BE A CUTOFF FOR WHEN OBSERVATION YEAR IS NOT CLOSE TO ANY OF THE DATES #
     
-    vals <- unlist(lapply(1:length(pa), FUN = function(x) {
-      eval(parse(text = paste0("pa$", tvDataYear.s$dataset[1],"_",closestYear[x],".",i, "[", x , "]")
+    vals <- unlist(lapply(1:length(pa$date), FUN = function(x) {
+      eval(parse(text = paste0("pa$", tvDataYear.s$dataset[1],"_",closestYear[x],".",i, "[", x ,"]")
       ))
     }))
     
@@ -171,7 +184,7 @@ dbName <- paste(baseName, "_att.sqlite", sep="")
 db <- dbConnect(SQLite(), paste0("model_input/",dbName))
 att_dat <- points_attributed
 st_geometry(att_dat) <- NULL
-#att_dat <- points_attributed@data
+
 dbWriteTable(db, paste0(baseName, "_att"), att_dat)
 dbDisconnect(db)
 rm(db)

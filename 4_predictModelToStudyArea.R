@@ -64,6 +64,7 @@ names(fullL) <- stackOrder
 rm(rs)
 
 source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
+
 envStack <- stack(newL)
 
 #envStack <- stack(fullL) # if not using helper/crop_mask_rast.R

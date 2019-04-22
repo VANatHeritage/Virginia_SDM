@@ -11,10 +11,11 @@ library(snowfall)
 
 # path where .tif env. var rasters are stored
 pathToRas <- here("_data","env_vars","raster","ras")
+pathToRas <- "D:/SDM/Tobacco/env_vars/Tobacco"
 # path to output tables (a database is generated here if it doesn't exist)
 pathToTab <- here("_data","env_vars","tabular")
 # background points table name (this should be already created with preproc_makeBackgroundPoints.R)
-table <- "background_pts"
+table <- "background_VA"
 # lkpEnvVars database
 dbLookup <- dbConnect(SQLite(), here("_data","databases","SDM_lookupAndTracking.sqlite"))
 
@@ -63,7 +64,7 @@ s.list <- unstack(envStack)
 names(s.list) <- names(envStack)
 
 ## Get random points table ----
-db <- dbConnect(SQLite(), paste0(pathToTab, "/", "background_CONUS.sqlite"))
+db <- dbConnect(SQLite(), paste0(pathToTab, "/", "background.sqlite"))
 
 #db <- dbConnect(SQLite(), paste0(pathToTab, "/", "background_pletasup.sqlite"))
 
@@ -158,7 +159,8 @@ e.df <- sfSapply(s.list, extract, y=samps, method = "simple")
 sfStop()
 
 DF <- data.frame(e.df)
-sampsAtt <- as.data.frame(cbind(fid = as.integer(samps$fid), DF))
+allNA <- !apply(DF, 1, function(x) all(is.na(x))) # to remove all-NA samples
+sampsAtt <- as.data.frame(cbind(fid = as.integer(samps$fid[allNA]), DF[allNA,]))
 
 # write to DB
 tp <- as.vector("INTEGER")
