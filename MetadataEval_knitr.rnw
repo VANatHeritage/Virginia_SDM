@@ -43,10 +43,11 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
   \LARGE \textit{\Sexpr{as.character(ElementNames$SciName)}} \\ 
   \normalsize Species Distribution Model (SDM) assessment metrics and metadata \\
   Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames$CommName)}}  \\
-  Grank: \Sexpr{ paste(as.character(ElementNames$g_rank)," - ",as.character(grank_desc[[2]]), sep="")}\\
-  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank)," - ",as.character(srank_desc[[2]]), sep="")}\\
-  Date: \Sexpr{format(Sys.Date(), "%d %b %Y")} \\  
-  Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)})
+  NatureServe Grank/Srank: \Sexpr{ paste0(paste(as.character(ElementNames$g_rank),"-",as.character(grank_desc[[2]]), sep=""), " / ",
+    paste(as.character(ElementNames$s_rank),"-",as.character(srank_desc[[2]]), sep=""))}\\
+  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank),"-",as.character(srank_desc[[2]]), sep="")}\\
+  Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)}) \\
+  Date: \Sexpr{format(Sys.Date(), "%d %b %Y")}
 \end{minipage}  \hfill   
 \begin{minipage}[b]{2in}   %minipage for thermometer  
 <<thermometer1, fig.height=1, fig.width=1, include=FALSE, echo=FALSE>>=
@@ -502,7 +503,7 @@ This model was built using a methodology developed through collaboration among t
 \includegraphics[width=1.0\linewidth]{../../../../../VANHPLogo}%png logo file at repository root
 \end{minipage}%
 \begin{minipage}[c]{0.85\linewidth}
-Please cite this document and its associated SDM as: \\
+\hangindent=0.5cm Please cite this document and its associated SDM as: \\
 Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Virginia Department of Conservation and Recreation - Division of Natural Heritage, Richmond, VA.
 \end{minipage}
 }
@@ -553,9 +554,11 @@ Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species dis
 \end{thebibliography}
 
 \pagebreak
-
-\begin{table}
-\caption*{Appendix 1. Descriptions for environmental variables included in model.}
+\normalsize
+\noindent
+Appendix 1. Descriptions for environmental variables included in model. 
+\begin{center}
+\begin{table}[ht]
 \resizebox{\textwidth}{!}{
 <<tableFour, results="asis", echo = FALSE>>=
   # For variable descriptions, get variable name, source, description (3 columns)
@@ -569,18 +572,17 @@ print(xtable(sdm.var.info, label = NULL, caption = NULL),
 @
 }
 \end{table}
-\medskip
+\end{center}
 
 \noindent
 Appendix 2. Model details for reproducibility
 \small
-
 \begin{itemize}
     \setlength{\itemsep}{0pt}
     \setlength{\parskip}{0pt}
     \setlength{\parsep}{0pt}
   \item{All R Scripts are available at \href{https://github.com/VANatHeritage/Virginia_SDM}{github}}
-  \item{The repository version (most recent commit SHA-1 hash) used for this run was: \Sexpr{modelrun_meta_data$repo_head}}
+  \item{The repository branch:head used for this run was: \texttt{\Sexpr{paste0(git2r::repository_head()$name,":",substr(modelrun_meta_data$repo_head,1,8))}}}
   \item{Validation metrics requiring a threshold use MTP (minimum training presence)}
   \item{R version: \Sexpr{modelrun_meta_data$r_version}}
   \item{Random seed for full randomForest model: \Sexpr{modelrun_meta_data$seed}}
