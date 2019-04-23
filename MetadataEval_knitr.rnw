@@ -45,10 +45,11 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
   \LARGE \textit{\Sexpr{as.character(ElementNames$SciName)}} \\ 
   \normalsize Species Distribution Model (SDM) assessment metrics and metadata \\
   Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames$CommName)}}  \\
-  Grank: \Sexpr{ paste(as.character(ElementNames$g_rank)," - ",as.character(grank_desc[[2]]), sep="")}\\
-  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank)," - ",as.character(srank_desc[[2]]), sep="")}\\
-  Date: \Sexpr{format(Sys.Date(), "%d %b %Y")} \\  
-  Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)})
+  NatureServe Grank/Srank: \Sexpr{ paste0(paste(as.character(ElementNames$g_rank),"-",as.character(grank_desc[[2]]), sep=""), " / ",
+    paste(as.character(ElementNames$s_rank),"-",as.character(srank_desc[[2]]), sep=""))}\\
+  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank),"-",as.character(srank_desc[[2]]), sep="")}\\
+  Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)}) \\
+  Date: \Sexpr{format(Sys.Date(), "%d %b %Y")}
 \end{minipage}  \hfill   
 \begin{minipage}[b]{2in}   %minipage for thermometer  
 <<thermometer1, fig.height=1, fig.width=1, include=FALSE, echo=FALSE>>=
@@ -350,22 +351,65 @@ All SDMs are sensitive to data inputs and methodological choices. Table 4 presen
 \hline
 Category & Metric & Score & Notes 
 \\ \hline
-\multirow{3}{*}{Species Data} & Presence data quality & \Sexpr{as.character(sdm.modeluse$spdata_dataqual)} & \Sexpr{as.character(sdm.modeluse$spdata_dataqualNotes)} 
-\\ \cline{2-4} & Absence/Background Data & \Sexpr{as.character(sdm.modeluse$spdata_abs)} & \Sexpr{as.character(sdm.modeluse$spdata_absNotes)} 
-\\ \cline{2-4} & Evaluation Data & \Sexpr{as.character(sdm.modeluse$spdata_eval)} & \Sexpr{as.character(sdm.modeluse$spdata_evalNotes)} 
+\multirow{3}{*}{Species Data} 
+  & Presence data quality 
+  & \Sexpr{as.character(sdm.modeluse$spdata_dataqual)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_dataqualNotes)} 
+\\ \cline{2-4}
+  & Absence/Background Data 
+  & \Sexpr{as.character(sdm.modeluse$spdata_abs)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_absNotes)} 
+\\ \cline{2-4}
+  & Evaluation Data 
+  & \Sexpr{as.character(sdm.modeluse$spdata_eval)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_evalNotes)} 
 \\ \hline
-\multirow{2}{*}{Environmental Predictors} & Ecological and predictive relevance & \Sexpr{as.character(sdm.modeluse$envvar_relevance)} & \Sexpr{as.character(sdm.modeluse$envvar_relevanceNotes)} 
-\\ \cline{2-4} & Spatial and temporal alignment & \Sexpr{as.character(sdm.modeluse$envvar_align)} & \Sexpr{as.character(sdm.modeluse$envvar_alignNotes)} \\ \hline
-\multirow{5}{*}{Modeling Process} & Algorithm choice & \Sexpr{as.character(sdm.modeluse$process_algo)} & \Sexpr{as.character(sdm.modeluse$process_algoNotes)} 
-\\ \cline{2-4} & Sensitivity & \Sexpr{as.character(sdm.modeluse$process_sens)} & \Sexpr{as.character(sdm.modeluse$process_sensNotes)} 
-\\ \cline{2-4} & Statistical rigor & \Sexpr{as.character(sdm.modeluse$process_rigor)} & \Sexpr{as.character(sdm.modeluse$process_rigorNotes)} 
-\\ \cline{2-4} & Performance & \Sexpr{as.character(sdm.modeluse$process_perform)} & \Sexpr{as.character(sdm.modeluse$process_performNotes)} 
-\\ \cline{2-4} & Model review & \Sexpr{as.character(sdm.modeluse$process_review)} &  \Sexpr{as.character(sdm.modeluse$process_reviewNotes)}
+\multirow{2}{2.8cm}{Environmental Predictors} 
+  & Ecological and predictive relevance 
+  & \Sexpr{as.character(sdm.modeluse$envvar_relevance)} 
+  & \Sexpr{as.character(sdm.modeluse$envvar_relevanceNotes)} 
+\\ \cline{2-4}
+  & Spatial and temporal alignment 
+  & \Sexpr{as.character(sdm.modeluse$envvar_align)} 
+  & \Sexpr{as.character(sdm.modeluse$envvar_alignNotes)} 
 \\ \hline
-\multirow{3}{*}{Model Products} & Mapped products & \Sexpr{as.character(sdm.modeluse$products_mapped)} & \Sexpr{as.character(sdm.modeluse$products_mappedNotes)} 
-\\ \cline{2-4} & Interpretation support products & \Sexpr{as.character(sdm.modeluse$products_support)} & \Sexpr{as.character(sdm.modeluse$products_supportNotes)} 
-\\ \cline{2-4} & Reproducibility & \Sexpr{as.character(sdm.modeluse$products_repo)} & \Sexpr{as.character(sdm.modeluse$products_repoNotes)} 
-\\ \hline & Iterative & \Sexpr{as.character(sdm.modeluse$interative)} & \Sexpr{as.character(sdm.modeluse$interativeNotes)} 
+\multirow{5}{*}{Modeling Process} 
+  & Algorithm choice 
+  & \Sexpr{as.character(sdm.modeluse$process_algo)} 
+  & \Sexpr{as.character(sdm.modeluse$process_algoNotes)} 
+\\ \cline{2-4}
+  & Sensitivity 
+  & \Sexpr{as.character(sdm.modeluse$process_sens)} 
+  & \Sexpr{as.character(sdm.modeluse$process_sensNotes)} 
+\\ \cline{2-4}
+  & Statistical rigor 
+  & \Sexpr{as.character(sdm.modeluse$process_rigor)} 
+  & \Sexpr{as.character(sdm.modeluse$process_rigorNotes)} 
+\\ \cline{2-4}
+  & Performance 
+  & \Sexpr{as.character(sdm.modeluse$process_perform)} 
+  & \Sexpr{as.character(sdm.modeluse$process_performNotes)} 
+\\ \cline{2-4}
+  & Model review 
+  & \Sexpr{as.character(sdm.modeluse$process_review)} 
+  & \Sexpr{as.character(sdm.modeluse$process_reviewNotes)}
+\\ \hline
+\multirow{3}{*}{Model Products} 
+  & Mapped products 
+  & \Sexpr{as.character(sdm.modeluse$products_mapped)} 
+  & \Sexpr{as.character(sdm.modeluse$products_mappedNotes)} 
+\\ \cline{2-4}
+  & Interpretation support products 
+  & \Sexpr{as.character(sdm.modeluse$products_support)} 
+  & \Sexpr{as.character(sdm.modeluse$products_supportNotes)} 
+\\ \cline{2-4}
+  & Reproducibility 
+  & \Sexpr{as.character(sdm.modeluse$products_repo)} 
+  & \Sexpr{as.character(sdm.modeluse$products_repoNotes)} 
+\\ \hline
+  & Iterative 
+  & \Sexpr{as.character(sdm.modeluse$interative)} 
+  & \Sexpr{as.character(sdm.modeluse$interativeNotes)} 
 \\ \hline                      
 \end{tabular}
 \end{table}
@@ -433,12 +477,13 @@ tmap_mode("plot")
 ## this is CartoDB.Positron
 # mtype <- 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 basetiles <- read_osm(bbox, type = 'esri-topo')#, zoom = 8, type = 'esri-topo') #, ext = 1.01) #type = mtype, ext = 1.1) 
-try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1))
+# try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1))
 
 # plot it
 qtm(basetiles) + 
   tm_shape(results_shape, name="modeled suitability") + # stream linework
-    tm_lines(col="prbblty", palette=clrs, labels=c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability"),
+  tm_lines(col="prbblty", palette=clrs, labels=c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability"), 
+             style = "equal",
              title.col = "modeled suitability") +     
   tm_shape(area.wb.pred) + # waterbodies and NHD polys
     tm_fill(col="pred", palette=clrs, legend.show = FALSE) + 
@@ -543,7 +588,7 @@ Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species dis
 \noindent
 Appendix 1. Descriptions for environmental variables included in model. Variables were derived from the StreamCat {\protect\NoHyper\cite{streamcat}\protect\endNoHyper} and National Hydrography Dataset (NHD) Plus {\protect\NoHyper\cite{nhd}\protect\endNoHyper} datasets.
 \begin{center}
-\begin{table}[h]
+\begin{table}[ht]
 \resizebox{\textwidth}{!}{
 <<Appendix1, results="asis", echo = FALSE>>=
   # For variable descriptions, get variable name, source, description (3 columns)

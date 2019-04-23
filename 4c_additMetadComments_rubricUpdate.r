@@ -65,7 +65,7 @@ if (mobi) {
   localityData <- data.frame(ELEMENT_GLOBAL_ID=NA, pres_dat_eval_rubric=NA, 
                              bison_use=0, gbif_use=0, inat_use=0, 
                              other_use=0, MJD_sufficient=NA, MJD_only=1, status=NA)
-  reviewerData <- data.frame(EGT_ID=NA, response=NA, date_completed=NA)
+  reviewerData <- data.frame(EGT_ID=ElementNames$EGT_ID, response=0, date_completed=NA)
 }
 
 # fill status if it is NA
@@ -109,7 +109,7 @@ dbExecute(db, statement = sql)
 prfmcMatrix <- data.frame("pAttribute" = c("C","A"),
                           "pComments" = c("Model TSS < 0.6, or not measurable due to low sample size. Mapped model output is evaluated for ecological plausibility by expert review.",
                                           "Model TSS >= 0.6. Mapped model output is evaluated for ecological plausibility by expert review."))
-if (length(group$vals) > 2) prfmAtt <- ifelse(tss.summ$mean<=0.6, "C", "A") else prfmAtt <- "C"
+if (length(group$vals)>2) prfmAtt <- ifelse(tss.summ$mean<=0.6, "C", "A") else prfmAtt <- "C"
 prfmUpdate <- prfmcMatrix[match(prfmAtt, prfmcMatrix$pAttribute),]
 sql <- paste0("update lkpSpeciesRubric set process_perform = '", prfmUpdate$pAttribute, 
               "', process_performNotes = '", prfmUpdate$pComments, 

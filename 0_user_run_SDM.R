@@ -49,7 +49,7 @@ add_vars = NULL
 # list standard variables to remove from model run
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
-prompt = T
+prompt = F
 
 # set wd and load function
 setwd(loc_scripts)
