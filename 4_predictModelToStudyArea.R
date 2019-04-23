@@ -4,6 +4,8 @@
 ## start with a fresh workspace with no objects loaded
 library(raster)
 library(randomForest)
+library(RSQLite)
+library(sf)
 removeTmpFiles(48) # clean old (>2days) Raster temporary files
 
 ####
@@ -25,7 +27,21 @@ load(paste0("rdata/",modelrun_meta_data$model_run_name,".Rdata"))
 
 ##Make the raster stack
 stackOrder <- names(df.full)[indVarCols]
+# set wd
+#temprast <- paste0(loc_model, "/", model_species, "/inputs/temp_rasts")
+#if (dir.exists(temprast)) setwd(temprast) else 
 setwd(loc_envVars)
+
+# get raster full names
+db <- dbConnect(SQLite(),dbname=nm_db_file)
+SQLQuery <- "select gridName, fileName from lkpEnvVars;"
+evs <- dbGetQuery(db, SQLQuery)
+evs$gridName <- tolower(evs$gridName)
+rasFiles <- merge(data.frame(gridName = stackOrder), evs)
+#sort it back to stackOrder's order
+rasFiles <- rasFiles[match(stackOrder, rasFiles$gridName),]
+dbDisconnect(db)
+rm(db)
 
 # find matching var rasters (with folder for temporal vars)
 raslist <- list.files(pattern = ".tif$", recursive = TRUE)
@@ -34,19 +50,25 @@ fullL <- list()
 
 # attach file names to env var names
 for (i in 1:length(stackOrder)) {
-  rs <- raslist[grep(paste0(stackOrder[i],".tif"), raslist, ignore.case = TRUE)]
+  rs <- raslist[grep(rasFiles$fileName[i], raslist, ignore.case = TRUE)]
   if (length(rs) > 1) {
     # always take most recent temporal raster
     rs1 <- do.call(rbind.data.frame, strsplit(rs, "_|/"))
     rs1$nm <- rs
     rs <- rs1$nm[which.max(as.numeric(rs1[,2]))]
+    rm(rs1)
   }
   fullL[[i]] <- rs
 }
 names(fullL) <- stackOrder
-rm(rs,rs1)
+rm(rs)
 
-envStack <- stack(fullL)
+source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
+
+envStack <- stack(newL)
+
+#envStack <- stack(fullL) # if not using helper/crop_mask_rast.R
+rm(fullL)
 
 # run prediction ----
 setwd(paste0(loc_model, "/", model_species,"/outputs"))
@@ -71,4 +93,9 @@ if (all(c("snow","parallel") %in% installed.packages())) {
   outRas <- predict(object=envStack, model=rf.full, type = "prob", index=2,
                     filename=fileNm, format = "GTiff", overwrite=TRUE)
 
+}
+
+# delete temp rasts folder
+if (dir.exists(paste0(options("rasterTmpDir")[1], "/", modelrun_meta_data$model_run_name))) {
+  unlink(x = paste0(options("rasterTmpDir")[1], "/", modelrun_meta_data$model_run_name), recursive = T, force = T)
 }

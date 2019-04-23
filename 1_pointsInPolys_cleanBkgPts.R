@@ -33,15 +33,15 @@ presPolys <- st_zm(st_read(nm_presFile, quiet = T))
 #check for proper column names. If no error from next code block, then good to go
 #presPolys$RA <- presPolys$SFRACalc
 shpColNms <- names(presPolys)
-desiredCols <- c("EO_ID_ST", "SNAME", "SCOMNAME", "RA", "OBSDATE")
+desiredCols <- c("UID", "GROUP_ID", "SPECIES_CD", "RA", "OBSDATE")
 if("FALSE" %in% c(desiredCols %in% shpColNms)) {
 	  stop(paste0("Column(s) are missing or incorrectly named: ", paste(desiredCols[!desiredCols %in% shpColNms], collapse = ", ")))
   } else {
     print("Required columns are present")
   }
 
-if(any(is.na(presPolys[,c("EO_ID_ST", "SNAME", "SCOMNAME", "RA")]))) {
-  stop("The columns 'EO_ID_ST','SNAME','SCOMNAME', and 'RA' (SFRACalc) cannot have NA values.")
+if(any(is.na(presPolys[,c("UID", "GROUP_ID", "SPECIES_CD", "RA")]))) {
+  stop("The columns 'UID','GROUP_ID','SPECIES_CD', and 'RA' (SFRACalc) cannot have NA values.")
 }
 
 #pare down columns
@@ -126,7 +126,7 @@ if("FALSE" %in% c(shp_expl$ra %in% raLevels)) {
 }
 
 
-#EObyRA <- unique(shp_expl[,c("expl_id", "eo_id_st","ra")])
+#EObyRA <- unique(shp_expl[,c("expl_id", "group_id","ra")])
 shp_expl$minSamps[shp_expl$ra == "very high"] <- 5
 shp_expl$minSamps[shp_expl$ra == "high"] <- 4
 shp_expl$minSamps[shp_expl$ra == "medium"] <- 3
@@ -152,6 +152,8 @@ if(nrow(polysWithNoPoints) > 0){
 
 # get actual finalSampNum
 ranPts.joined2 <- ranPts.joined[0,]
+
+#### this is slow! ####
 for (ex in 1:length(shp_expl$geometry)) {
   s1 <- shp_expl[ex,]
   samps <- row.names(ranPts.joined[ranPts.joined$expl_id==s1$expl_id,])
@@ -186,18 +188,66 @@ st_write(ranPts.joined, nm.RanPtFile, driver="ESRI Shapefile", delete_layer = TR
 ### remove Coincident Background points ----
 ###
 
-# get the background shapefile
-backgShapef <- st_read(nm_bkgPts, quiet = T)
+# get range info from the DB (as a list of HUCs)
+db <- dbConnect(SQLite(),dbname=nm_db_file)
+egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", model_species, "';"))[1,1]
+SQLquery <- paste0("SELECT huc10_id from lkpRange WHERE EGT_ID = ", egt, ";")
+                  # inner join lkpSpecies on lkpRange.EGT_ID = lkpSpecies.EGT_ID
+                  # where lkpSpecies.sp_code = '", model_species, "';")
+hucList <- dbGetQuery(db, statement = SQLquery)$huc10_id
+if (length(hucList) == 0) {
+  message("Calculating HUC10 range...")
+  # auto-range (intersecting huc10s + huc10s that they border)
+  huc10 <- st_read(paste0(loc_scripts, "/_data/other_spatial/feature/HUC10.shp"))
+  sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
+  sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
+  hucList <- sti2$HUC_10
+  rm(sti, sti2, huc10)
+  hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = model_species, version_info = as.character(Sys.Date()), 
+                      comments = "auto-generated: intersecting HUC-10 + 1-HUC10 buffer")
+  dbWriteTable(db, "lkpRange", hucdf, append = T)
+}
+dbDisconnect(db)
+rm(db)
+
+op <- options()
+options(useFancyQuotes = FALSE) #need straight quotes for query
+# get the background data from the DB
+db <- dbConnect(SQLite(), nm_bkgPts[1])
+qry <- paste0("SELECT * from ", nm_bkgPts[2], " where substr(huc12,1,10) IN (", paste(sQuote(hucList), collapse = ", ", sep = "")," );")
+bkgd <- dbGetQuery(db, qry)
+tcrs <- dbGetQuery(db, paste0("SELECT proj4string p from lkpCRS where table_name = '", nm_bkgPts[2], "';"))$p
+samps <- st_sf(bkgd, geometry = st_as_sfc(bkgd$wkt, crs = tcrs))
+options(op)
+rm(op)
 
 # find coincident points ----
-polybuff <- st_transform(shp_expl, st_crs(backgShapef))
+polybuff <- st_transform(shp_expl, st_crs(samps))
 polybuff <- st_buffer(polybuff, dist = 30)
 
-coincidentPts <- unlist(st_contains(polybuff, backgShapef, sparse = TRUE))
+coincidentPts <- unlist(st_contains(polybuff, samps, sparse = TRUE))
 
 # remove them (if any)
-if (length(coincidentPts) > 0) backgSubset <- backgShapef[-coincidentPts,] else backgSubset <- backgShapef
+if (length(coincidentPts) > 0) backgSubset <- samps[-coincidentPts,] else backgSubset <- samps
 
-# write background points
-outFileName <- paste0(loc_model,"/",model_species,"/inputs/model_input/", paste0(baseName, "_bkg_clean.shp"))
-st_write(backgSubset, outFileName, driver="ESRI Shapefile", delete_layer = TRUE)
+#write it up and do join in sqlite (faster than downloading entire att set)
+st_geometry(backgSubset) <- NULL
+tmpTableName <- paste0(nm_bkgPts[2], "_", baseName)
+dbWriteTable(db, tmpTableName, backgSubset, overwrite = TRUE)
+
+# do the join, get all the data back down
+qry <- paste0("SELECT * from ", tmpTableName, " INNER JOIN ", nm_bkgPts[2], "_att on ",
+              tmpTableName,".fid = ", nm_bkgPts[2], "_att.fid;")
+bgSubsAtt <- dbGetQuery(db, qry)
+bgSubsAtt$fid..4 <- NULL  # result of join; not sure if this is necesarry but should be harmless
+
+# delete the table on the db
+dbRemoveTable(db, tmpTableName)
+dbDisconnect(db)
+
+dbName <- paste0(loc_model, "/", model_species, "/inputs/model_input/", baseName, "_att.sqlite")
+db <- dbConnect(SQLite(), dbName)
+dbWriteTable(db, paste0(nm_bkgPts[2], "_clean"), bgSubsAtt, overwrite = TRUE)
+
+dbDisconnect(db)
+

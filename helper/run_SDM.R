@@ -18,8 +18,9 @@ run_SDM <- function(
   loc_model,
   loc_envVars,
   nm_bkgPts,
+  nm_HUC_file,
   nm_refBoundaries,
-  nm_studyAreaExtent,
+  project_overview = "",
   model_comments = "",
   metaData_comments = "",
   modeller = NULL,
@@ -27,7 +28,7 @@ run_SDM <- function(
   model_rdata = NULL,
   add_vars = NULL,
   remove_vars = NULL,
-  rubric_default = NULL,
+  huc_level = NULL,
   project_blurb = NULL,
   prompt = FALSE
 ) {
@@ -66,15 +67,15 @@ run_SDM <- function(
       loc_model = loc_model,
       loc_envVars = loc_envVars,
       nm_bkgPts = nm_bkgPts,
+      nm_HUC_file = nm_HUC_file,
       nm_refBoundaries = nm_refBoundaries,
-      nm_studyAreaExtent = nm_studyAreaExtent,
+      project_overview = project_overview,
       model_comments = model_comments,
       metaData_comments = metaData_comments,
       modeller = modeller,
       add_vars = add_vars,
       remove_vars = remove_vars,
       baseName = baseName,
-      rubric_default = rubric_default,
       project_blurb = project_blurb)
   }
   
@@ -117,7 +118,7 @@ run_SDM <- function(
                   "3_createModel.R",
                   "4_predictModelToStudyArea.R",
                   "4b_thresholdModel.R",
-                  "4c_additionalMetadataComments.R",
+                  "4c_additMetadComments_rubricUpdate.r",
                   "5_createMetadata.R"
   )
   run_steps <- step_names[match(begin_step, all_steps) : length(all_steps)]

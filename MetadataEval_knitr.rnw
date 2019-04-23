@@ -5,10 +5,22 @@
 \usepackage{fancyhdr}     %for headers,footers
 \usepackage{underscore}  %needed if any text has underscores
 \usepackage{rotating}
-\usepackage{caption} %for managing table captions
 \usepackage[super,comma]{natbib}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+\usepackage{caption} %for managing table captions
+\captionsetup{justification=raggedright,singlelinecheck=false}
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{multirow}
+\usepackage{array}
+\usepackage{float}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 \usepackage[normalem]{ulem}
 \useunder{\uline}{\ul}{}
 
@@ -17,7 +29,7 @@
 %add footers
 \cfoot{
 \small   %small font. The double slashes is newline in fancyhdr
-Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). \\ \Sexpr{sdm.modeler$ProgramName}
+Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}).
 }
 \rfoot{p. \thepage}
 
@@ -28,10 +40,11 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
 
 \noindent
 \begin{minipage}[b]{4.75in}   %everything in this minipage will be adjacent, left of the thermometer
-  \LARGE \textit{\Sexpr{as.character(ElementNames[[1]])}} \\ 
+  \LARGE \textit{\Sexpr{as.character(ElementNames$SciName)}} \\ 
   \normalsize Species Distribution Model (SDM) assessment metrics and metadata \\
-  Common name: \Sexpr{as.character(ElementNames[[2]])} \\
-  Grank: \Sexpr{ paste(as.character(ElementNames[[6]])," - ",as.character(grank_desc[[2]]), sep="")}\\
+  Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames$CommName)}}  \\
+  Grank: \Sexpr{ paste(as.character(ElementNames$g_rank)," - ",as.character(grank_desc[[2]]), sep="")}\\
+  %Srank: \Sexpr{ paste(as.character(ElementNames$s_rank)," - ",as.character(srank_desc[[2]]), sep="")}\\
   Date: \Sexpr{format(Sys.Date(), "%d %b %Y")} \\  
   Code: \Sexpr{as.character(ElementNames$Code)} (EGT_ID: \Sexpr{as.character(ElementNames$EGT_ID)})
 \end{minipage}  \hfill   
@@ -69,28 +82,23 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
 \smallskip
 \hrule
 \medskip
-\noindent
-This SDM incorporates the number of known and background locations
-indicated in Table 1, modeled with the random forests 
-routine \cite{breiman2001, iverson2004} in the R statistical environment 
-\cite{liaw2002, r}. We validated the model by jackknifing 
-(also called leave-one-out, see
-\cite{fielding1997, fielding2002, pearson2007})
-by \Sexpr{as.character(group$JackknType)} for a total of \Sexpr{length(group$vals)} groups.
-The statistics in Table 2 report the mean and variance for these jackknifing runs.
-
+\noindent 
+\Sexpr{as.character(project_overview)}
 \smallskip
-
+\noindent
+This SDM incorporates the number of known and background locations indicated in Table 1, modeled with the random forests routine {\protect\NoHyper\cite{breiman2001, iverson2004}\protect\endNoHyper} in the R statistical environment {\protect\NoHyper\cite{liaw2002, r}\protect\endNoHyper}. We validated the model by jackknifing (also called leave-one-out {\protect\NoHyper\cite{fielding1997, fielding2002, pearson2007}\protect\endNoHyper}) by \Sexpr{tolower(as.character(group$JackknType))} for a total of \Sexpr{length(group$vals)} groups. The statistics in Table 2 report the mean and variance of validation statistics for these jackknifing runs.\\
+\medskip
 \small
 \begin{minipage}[t]{3in}
 
 \smallskip     %dummy first line to align with next minipage
 
-Table 1. Input statistics. PR points = presence points. These are points placed in polygon-based location information or point-based observations. Groups = spatial groupings of points based on polygon data or spatial grouping of observations. BG points = background points placed throughout model area excluding known species locations.
+
+Table 1. Input statistics. Presence points are points placed in polygon-based location information or point-based observations. Groups describe groupings of points based on polygon data or spatial grouping of observations. Background points are placed throughout model area excluding known species locations.
 \smallskip
 \begin{center}
 <<tableOne, results="asis", echo = FALSE>>=
-	summ.table <- data.frame(Name=c("PR points","Groups","BG points"),
+	summ.table <- data.frame(Name=c("Presence points","Groups","Background points"),
                          Number=c(nrow(subset(df.full, pres == 1)),
                          numEOs,
                          nrow(subset(df.full, pres == 0))
@@ -104,8 +112,8 @@ Table 1. Input statistics. PR points = presence points. These are points placed 
 
 Table 2. Validation statistics for jackknife trials. Overall Accuracy = 
 Correct Classification Rate, TSS = True Skill Statistic, AUC = 
-area under the ROC curve \cite{allouche2006, vaughan2005,
-fielding2002}.
+area under the ROC curve {\protect\NoHyper\cite{allouche2006, vaughan2005,
+fielding2002}\protect\endNoHyper}.
 \smallskip
 
 \begin{center}
@@ -133,7 +141,8 @@ fielding2002}.
 \end{center}
 
 \medskip
-<<checkEvalExists, include=FALSE, echo=FALSE>>=
+\normalsize
+    <<checkEvalExists, include=FALSE, echo=FALSE>>=
 if (exists("n.var")) {
   txt <- paste0("Validation runs used ",n.var," environmental 
   variables, the most important of ",OriginalNumberOfEnvars," 
@@ -150,8 +159,7 @@ cat(txt)
 @
 The final model was built using \Sexpr{rf.full$ntree} trees, all presence 
 and background points, with an mtry of \Sexpr{rf.full$mtry}, and \Sexpr{length(EnvVars$impVal)} environmental variables.
-
-
+\small
 \begin{center}
 <<ROCplot, fig.width=2.9, fig.height=1.6, include=FALSE, echo=FALSE>>=
 par(mar=c(2.8,2.5,.5,10),   #bottom, left, top, right
@@ -220,15 +228,16 @@ rm(list=ls(pattern="rl."))
 Figure 1. ROC plot for all \Sexpr{length(group$vals)} validation runs, 
 averaged along cutoffs.
 
-\end{minipage}
+\end{minipage}%
 \hfill \begin{minipage}[t]{3.5in}
 
 \smallskip  %dummy first line to align with previous minipage
 
-<<importanceFig, fig.width=3.0, fig.height=6.6, include=FALSE, echo=FALSE>>=
-par(mar=c(3.2,2.5,.5,0.1),   #bottom, left, top, right
+<<importanceFig, fig.width=3.2, fig.height=5.5, include=FALSE, echo=FALSE>>=
+par(mar=c(3.2,2.5,.25,0.1),   #bottom, left, top, right
     tcl=-0.1,   #tic length
-    mgp=c(1.3,0.4,0) #placement of axis title, labels, line
+    mgp=c(1.3,0.4,0), #placement of axis title, labels, line
+    bty="l"
     )
   #get the order for the importance charts
   ord <- rev(order(EnvVars$impVal, decreasing = TRUE)[1:length(EnvVars$impVal)])
@@ -243,10 +252,8 @@ par(mar=c(3.2,2.5,.5,0.1),   #bottom, left, top, right
 \begin{center}
 \includegraphics{figure/importanceFig-1.pdf}    %place it
 \end{center}
-Figure 2. Relative importance of each environmental variable based on the full
-model using all background and presence points as input. Importance values (mean decrease in accuracy) are extracted from the randomForest function\cite{liaw2002}. See Table 4 for variable descriptions.
-
-\end{minipage} 
+Figure 2. Relative importance of each environmental variable based on the full model using all sites as input. Importance values (mean decrease in accuracy) are extracted from the randomForest{\protect\NoHyper\cite{liaw2002}\protect\endNoHyper} function. See Appendix 1 for variable descriptions.
+\end{minipage}% 
 
 \normalsize
 \pagebreak
@@ -294,38 +301,119 @@ for (plotpi in 1:length(pPlots)){
   mtext("log of fraction of votes", side = 2, line = -1, outer=TRUE, cex = 0.7)
 @
 \includegraphics{figure/pPlotFig-1.pdf} \\   %place them, then line break
-Figure 3. Partial dependence plots for the \Sexpr{as.character(length(pPlots))} environmental variables with the most influence on the model. Each plot shows the effect 
-of the variable on the probability of appropriate habitat with the 
-effects of the other variables removed \cite{liaw2002}. The x-axis covers the range of values for the variable assessed; the y-axis represents the effect between the variable and model response. Peaks in the line indicate where this variable had the strongest influence on predicting 
-appropriate habitat. Decreasing lines from left to right show a negative relationshiop overall; increasing lines, positive. The distribution of each category (thin red = BG points, 
-thick blue = PR points) is depicted at the top margin. See Table 4 for variable descriptions.
+\small
+Figure 3. Partial dependence plots for the \Sexpr{as.character(length(pPlots))} environmental variables with the most influence on the model. Each plot shows the effect of the variable on the probability of appropriate habitat with the effects of the other variables removed {\protect\NoHyper\cite{liaw2002}\protect\endNoHyper}. The x-axis covers the range of values for the variable assessed; the y-axis represents the effect between the variable and model response. Peaks in the black line indicate where this variable had the strongest influence on predicting appropriate habitat. Decreasing lines from left to right show a negative relationship overall; increasing lines, positive. The distribution of each category (thin red = Background points, thick blue = Presence points) is depicted at the top margin. See Appendix 1 for variable descriptions.
+\normalsize
 
 \medskip
 \medskip
-\medskip
 \noindent
-Species distribution model outputs display the probability (0-1) of a location (i.e. stream reach or raster cell) having similar environmental conditions in comparison to known presence locations. No model will ever depict sites where a targeted element will occur with certainty, it can \textit{only} depict locations it interprets as appropriate habitat for the targeted element. The delineation of suitable habitats is made by the selection of a threshold value, where locations with values above the threshold are designated as likely suitable habitat, and those with values below the threshold may be unsuitable. Threshold values are often statistically calculated. SDMs can be used in many ways and the depiction of appropriate habitat should be varied depending on intended use. For targeting field surveys, an SDM may be used to refine the search area; users should always employ additional GIS tools to further direct search efforts. A lower threshold depicting more land area may be appropriate to use in this case. For a more conservative depiction of suitable habitat that shows less land area, a higher threshold may be more appropriate. Different thresholds for this model (full model) are described in Table 3.
+Species distribution model outputs display the probability (0-1) of a location (i.e. stream reach or raster cell) having similar environmental conditions in comparison to known presence locations. No model will ever depict sites where a targeted element will occur with certainty, it can \textit{only} depict locations it interprets as appropriate habitat for the targeted element. The delineation of suitable habitats is made by the selection of a threshold value, where locations with values above the threshold are designated as likely suitable habitat, and those with values below the threshold may be unsuitable. Threshold values are often statistically calculated. SDMs can be used in many ways and the depiction of appropriate habitat should be varied depending on intended use. For targeting field surveys, an SDM may be used to refine the search area; users should always employ additional GIS tools to further direct search efforts. A lower threshold depicting more area may be appropriate to use in this case. For a more conservative depiction of suitable habitat that shows less area, a higher threshold may be more appropriate. Different thresholds for this model (full model) are described in Table 3.
 
 \medskip
 \noindent
 \begin{minipage}{\linewidth} %keep table header with table
-Table 3. Thresholds \cite{LiuEtAl2005, LiuEtAl2015} calculated from the final model. The Value column reports the threshold; EOs indicates the percentage (number in brackets) of EOs within which at least one point was predicted as suitable habitat; Polys indicates the percentage (number) of polygons within which at least one point was predicted as having suitable habitat; Pts indicates the percentage of PR points predicted having suitable habitat. Total numbers of EOs, polygons, and PR points used in the final model are reported in Table 1.
-
-\medskip
-\noindent
+\small
+Table 3. Thresholds {\protect\NoHyper\cite{LiuEtAl2005, LiuEtAl2015}\protect\endNoHyper} calculated from the final model. The Value column reports the threshold; Groups indicates the percentage (number in brackets) of groups within which at least one point was predicted as suitable habitat; Pts indicates the percentage of PR points predicted having suitable habitat. Total numbers of groups and presence points used in the final model are reported in Table 1.
+\smallskip
+\begin{center}
 <<tableThree, results="asis", echo = FALSE>>=
   tbl <- sdm.thresh.table
   #tbl$Citation <- gsub("(^.*)","\\\\cite{\\1}",sdm.thresh.table$Citation)
-  print(xtable(tbl, digits = 3, align = c("r","p{2in}","r","r","r","r","p{2.3in}")), 
+  print(xtable(tbl, digits = 3, align = c("r","p{2in}","r","r","r","p{2.3in}")), 
               floating=FALSE, include.rownames=FALSE)
 @
+\end{center}
 \end{minipage}
+
+\normalsize
+\bigskip
+\noindent
+\textbf{Model Evaluation and Intended Use} \\\\
+All SDMs are sensitive to data inputs and methodological choices. Table 4 presents scoring of modeling factors based on the model evaluation rubric presented in Sofaer et al. 2019 {\protect\NoHyper\cite{SofaerEtAl2019}\protect\endNoHyper}. \Sexpr{as.character(project_blurb)}
+\\
+\smallskip
+\pagebreak
+
+
+\noindent Table 4. Model evaluation results based on Sofaer et al. 2019. Scores can be attributed as ideal, acceptable, or interpret with caution.
+\normalsize
+\begin{table}[H]
+\small
+\centering
+\begin{tabular}{m{2.8cm}m{5cm}P{2cm}m{5.7cm}}
+\hline
+Category & Metric & Score & Notes 
+\\ \hline
+\multirow{3}{*}{Species Data} 
+  & Presence data quality 
+  & \Sexpr{as.character(sdm.modeluse$spdata_dataqual)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_dataqualNotes)} 
+\\ \cline{2-4}
+  & Absence/Background Data 
+  & \Sexpr{as.character(sdm.modeluse$spdata_abs)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_absNotes)} 
+\\ \cline{2-4}
+  & Evaluation Data 
+  & \Sexpr{as.character(sdm.modeluse$spdata_eval)} 
+  & \Sexpr{as.character(sdm.modeluse$spdata_evalNotes)} 
+\\ \hline
+\multirow{2}{2.8cm}{Environmental Predictors} 
+  & Ecological and predictive relevance 
+  & \Sexpr{as.character(sdm.modeluse$envvar_relevance)} 
+  & \Sexpr{as.character(sdm.modeluse$envvar_relevanceNotes)} 
+\\ \cline{2-4}
+  & Spatial and temporal alignment 
+  & \Sexpr{as.character(sdm.modeluse$envvar_align)} 
+  & \Sexpr{as.character(sdm.modeluse$envvar_alignNotes)} 
+\\ \hline
+\multirow{5}{*}{Modeling Process} 
+  & Algorithm choice 
+  & \Sexpr{as.character(sdm.modeluse$process_algo)} 
+  & \Sexpr{as.character(sdm.modeluse$process_algoNotes)} 
+\\ \cline{2-4}
+  & Sensitivity 
+  & \Sexpr{as.character(sdm.modeluse$process_sens)} 
+  & \Sexpr{as.character(sdm.modeluse$process_sensNotes)} 
+\\ \cline{2-4}
+  & Statistical rigor 
+  & \Sexpr{as.character(sdm.modeluse$process_rigor)} 
+  & \Sexpr{as.character(sdm.modeluse$process_rigorNotes)} 
+\\ \cline{2-4}
+  & Performance 
+  & \Sexpr{as.character(sdm.modeluse$process_perform)} 
+  & \Sexpr{as.character(sdm.modeluse$process_performNotes)} 
+\\ \cline{2-4}
+  & Model review 
+  & \Sexpr{as.character(sdm.modeluse$process_review)} 
+  & \Sexpr{as.character(sdm.modeluse$process_reviewNotes)}
+\\ \hline
+\multirow{3}{*}{Model Products} 
+  & Mapped products 
+  & \Sexpr{as.character(sdm.modeluse$products_mapped)} 
+  & \Sexpr{as.character(sdm.modeluse$products_mappedNotes)} 
+\\ \cline{2-4}
+  & Interpretation support products 
+  & \Sexpr{as.character(sdm.modeluse$products_support)} 
+  & \Sexpr{as.character(sdm.modeluse$products_supportNotes)} 
+\\ \cline{2-4}
+  & Reproducibility 
+  & \Sexpr{as.character(sdm.modeluse$products_repo)} 
+  & \Sexpr{as.character(sdm.modeluse$products_repoNotes)} 
+\\ \hline
+  & Iterative 
+  & \Sexpr{as.character(sdm.modeluse$interative)} 
+  & \Sexpr{as.character(sdm.modeluse$interativeNotes)} 
+\\ \hline                      
+\end{tabular}
+\end{table}
 
 \medskip
 \noindent
 <<customComments, results="asis", echo = FALSE>>=
 if(nrow(sdm.customComments.subset) > 0){
-  {cat(sdm.customComments.subset$comments)}
+  cat("\\textbf{Model Comments} \\\\")
+  cat(sdm.customComments.subset$comments)
 }
 @
 
@@ -411,35 +499,61 @@ Category & Metric & Score & Notes
 \medskip
 \begin{center}
 
-<<mapFig, fig.width=7, fig.height=8, include=FALSE, echo=FALSE>>=
-par(mar=c(0,0,4.5,0), xpd = F, cex=0.9, adj = 0.05)
+<<mapFig, fig.width=7, fig.height=7, include=FALSE, echo=FALSE, dev='png', dpi=600>>=
+#par(mar=c(0,0,4.5,0), xpd = F, cex=0.9, adj = 0.05)
 nclr <- 5
 clrs <- brewer.pal('Blues',n=nclr)
-# myTheme=rasterTheme(region=brewer.pal('Blues', n=nclr))
-# levelplot(ras, margin=FALSE, at=(0:10)/10, par.settings=rasterTheme(region=brewer.pal('Blues',n=9)), scales=list(draw = FALSE),xlim=c( 1000000, 2300000),ylim=c(1500000, 3100000)) + layer(sp.polygons(referenceBoundaries,lwd=0.05,col='gray')) + layer(sp.polygons(studyAreaExtent,lwd=1, col='red'))
 
-# levelplot(ras, margin=FALSE, at=(0:10)/10, par.settings=myTheme, scales=list(draw = FALSE),xlim=c(as.vector(studyAreaExtent@bbox[1,1])-10000,as.vector(studyAreaExtent@bbox[1,2])+10000),ylim=c(as.vector(studyAreaExtent@bbox[2,1])-10000,as.vector(studyAreaExtent@bbox[2,2])+10000)) + layer(sp.polygons(referenceBoundaries,lwd=0.4,col='gray50'), data=list(referenceBoundaries=referenceBoundaries)) + layer(sp.polygons(studyAreaExtent,lwd=1, col='red'), data = list(studyAreaExtent=studyAreaExtent))
+# figure out size of study area, expand if less than 889km across,
+#  which is 1;5,000,000 when figure is 7 inches wide (which it is here)
+bbox <- bb(referenceBoundaries) # use state outline as fixed boundary
+# bbox <- bb(studyAreaExtent)
+# studyAreaWidth <- bbox$xmax - bbox$xmin
+# studyAreaHeight <- bbox$ymax - bbox$ymin
+# if(studyAreaWidth < 889000){
+#   bbox <- bb(bbox, width = 889000, relative = FALSE)
+#   }
+# if(studyAreaHeight < 889000){
+#   bbox <- bb(bbox, height = 889000, relative = FALSE)
+#   }
 
-# set up plot
-plot(st_geometry(studyAreaExtent), axes = F, col = NA, border = NA)
-plot(st_geometry(referenceBoundaries), add = T, border = "grey80")
 
-legend(par('usr')[2], par('usr')[4], legend = rev(c("Low Habitat Suitability", 
-                                 rep("               |               ", nclr-2), "High Habitat Suitability")),
-       fill = rev(clrs), border = rev(clrs), cex=0.8, bg = "white", xpd = NA, xjust = 1, yjust = 0)
-title(main = paste0(as.character(ElementNames[[2]]), " (", as.character(ElementNames[[1]]), "): \n    SDM Habitat Suitability Predictions"), cex.main = 1.1)
-box()
-box(which = "outer")
-# need to plot raster after legend, title, box, otherwise it messes up margins
-plot(ras, maxpixels = 500000, col = clrs, axes = F, add = T, legend = F)
-plot(studyAreaExtent$geometry, border = "red", lwd = 2, add = T)
+tmap_options(max.raster = c("plot" = 300000, "view" = 100000))
+tmap_mode("plot")
+###get the basemap
+# for basemap options see http://leaflet-extras.github.io/leaflet-providers/preview/
+# for native options provided by read_osm, see ?OpenStreetMap::openmap
+## this is stamen-toner
+#basetiles <- read_osm(studyAreaExtent, type = "stamen-toner", ext = 1.1)
+
+## this is Esri.WorldGrayCanvas
+mtype <- 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}.png?'
+
+## this is CartoDB.Positron
+mtype <- 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+mtype <- 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png'
+ 
+basetiles <- read_osm(bbox, type = 'esri-topo')#, zoom = 8, type = 'esri-topo') #, ext = 1.01) #type = mtype, ext = 1.1) 
+# plot it
+qtm(basetiles) + 
+  tm_shape(ras) + 
+    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9,
+            labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability")) +   tm_shape(referenceBoundaries) +
+    tm_borders(col = "grey", lwd = 1) + 
+  tm_shape(studyAreaExtent) + 
+    tm_borders(col = "red", lwd = 2) + 
+  tm_compass(north = 0, type = "arrow", position = c("left","bottom")) + 
+  tm_scale_bar()
+
 @
-\includegraphics{figure/mapFig-1.pdf}    
+\includegraphics{figure/mapFig-1.png}    
 \end{center}
-Figure 4. A generalized view of the model predictions throughout the modeled area. State boundaries are shown in gray. The modeled area is outlined in red. 
+Figure 4. A generalized view of the model predictions throughout the modeled area. State boundaries are depicted as a thin gray line. The modeled area is outlined in red. Basemap: CartoDB.Positron (\copyright  \href{https://www.openstreetmap.org/copyright}{OpenStreetMap}, contributors: \copyright  \href{https://carto.com/attributions}{CARTO}).
 
+\normalsize
 \pagebreak
-This distribution model would not have been possible without data sharing among organizations. The following organizations provided data:
+
+This distribution model would not have been possible without data sharing among organizations. Other data sets and sources may have been evaluated, but this final model includes data from these sources:
 \begin{itemize}
     \setlength{\itemsep}{0pt}
     \setlength{\parskip}{0pt}
@@ -449,25 +563,26 @@ for(i in 1:length(sdm.dataSources$ProgramName)){
   x <- paste("\\item ", sdm.dataSources$ProgramName[[i]], "\n", sep = "")
   y <- sub("&", "\\\\&", x) #escape ampersands if there are any - special character in latex
   cat(y)
-  #cat(paste("\\item ", sdm.dataSources$ProgramName[[i]], "\n", sep = ""))
 }
 @
 \end{itemize}
 
 \medskip
-This model was built using a methodology developed through collaboration among the Florida Natural Areas Inventory, the New York Natural Heritage Program, the Pennsylvania Natural Heritage Program, and the Virginia Natural Heritage Program, all member programs of the NatureServe Network. It is one of a suite of aquatic species distribution models developed using the same methods, scripts, and environmental data sets. Our goal was to be consistent and transparent in our methodology, validation, and output.
+\noindent
+This model was built using a methodology developed through collaboration among the Florida Natural Areas Inventory, the New York Natural Heritage Program, the Pennsylvania Natural Heritage Program, and the Virginia Natural Heritage Program, all member programs of the NatureServe Network. It is one of a suite of species distribution models developed using the same methods, scripts, and environmental data sets. Our goal was to be consistent and transparent in our methodology, validation, and output.
 
 \medskip
 \noindent
-
 \setlength{\fboxsep}{5pt}
 \fbox{
-\begin{minipage}[t]{0.90\linewidth}%
+\begin{minipage}[c]{0.1\linewidth}
+\includegraphics[width=1.0\linewidth]{../../../../../VANHPLogo}%png logo file at repository root
+\end{minipage}%
+\begin{minipage}[c]{0.85\linewidth}
 Please cite this document and its associated SDM as: \\
-\Sexpr{sdm.modeler$ProgramName}. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. \Sexpr{sdm.modeler$FullOrganizationName}, \Sexpr{sdm.modeler$City}, \Sexpr{sdm.modeler$State}.
+Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Virginia Department of Conservation and Recreation - Division of Natural Heritage, Richmond, VA.
 \end{minipage}
 }
-
 
 \medskip
 \noindent
@@ -511,26 +626,44 @@ Please cite this document and its associated SDM as: \\
   \bibitem{LiuEtAl2015} Liu, C., G. Newell, and M. White. 2015. On the selection of 
     thresholds for predicting species occurrence with presence-only data. Ecology and 
     Evolution 6:337–348. 
-  \bibitem{SofaerEtAl2019} Sofaer, H. R., C. S. Jarnevich1, I. S. Pearse, R. Lyons Smyth, S. Auer, G. L. Cook, T. C. Edwards, Jr., G. F. Guala, T. G. Howard, J. T. Morisette, and H. Hamilton. 2019. The development and delivery of species distribution models to inform decision-making. BioScience. In press.
-
+  \bibitem{SofaerEtAl2019} Sofaer, H. R., C. S. Jarnevich, I. S. Pearse, R. L. Smyth, S. Auer, G. L. Cook, T. C. Edwards, Jr., G. F. Guala, T. G. Howard, J. T. Morisette, and H. Hamilton. (In press). The development and delivery of species distribution models to inform decision-making. BioScience.
 \end{thebibliography}
 
 \pagebreak
-\noindent
-Table 4. Descriptions for environmental variables included in the model.
-\begin{center}
+
+\begin{table}
+\caption*{Appendix 1. Descriptions for environmental variables included in model.}
+\resizebox{\textwidth}{!}{
 <<tableFour, results="asis", echo = FALSE>>=
   # For variable descriptions, get variable name, source, description (3 columns)
 addtorow <- list()
 addtorow$pos <- list()
 addtorow$pos[[1]] <- c(0)
-addtorow$command <- c(paste("\\hline \n","\\hline \n",sep=""))
-print(xtable(sdm.var.info, label = NULL), # caption = "Table 4. Descriptions for environmental variables included in model."),
-      include.rownames=FALSE, scalebox = 0.7, #floating = TRUE, #floating.environment = "sidewaystable",
-      #caption.placement = "top", 
-      sanitize.text = force, add.to.row = addtorow)
+addtorow$command <- c(paste("\\hline \n",sep=""))
+print(xtable(sdm.var.info, label = NULL, caption = NULL),
+    include.rownames=FALSE, 
+      sanitize.text = force, add.to.row = addtorow, floating=FALSE)
 @
-\end{center}
+}
+\end{table}
+\medskip
+
+\noindent
+Appendix 2. Model details for reproducibility
+\small
+
+\begin{itemize}
+    \setlength{\itemsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\parsep}{0pt}
+  \item{All R Scripts are available at \href{https://github.com/VANatHeritage/Virginia_SDM}{github}}
+  \item{The repository version (most recent commit SHA-1 hash) used for this run was: \Sexpr{modelrun_meta_data$repo_head}}
+  \item{Validation metrics requiring a threshold use MTP (minimum training presence)}
+  \item{R version: \Sexpr{modelrun_meta_data$r_version}}
+  \item{Random seed for full randomForest model: \Sexpr{modelrun_meta_data$seed}}
+  \item{randomForest mtry: \Sexpr{rf.full$mtry}}
+  \item{randomForest ntrees: \Sexpr{rf.full$ntree}}
+\end{itemize}
 
 \end{document}
 

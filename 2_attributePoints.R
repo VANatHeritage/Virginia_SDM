@@ -1,33 +1,47 @@
 # File: 2_attributePoints.r
 # Purpose: attribute environmental data to presence points
 
-## start with a fresh workspace with no objects loaded
 library(raster)
 library(sf)
-# library(rgdal)
 library(RSQLite)
-# library(maptools)
+library(snowfall)
 
 # load data, QC ----
 setwd(loc_envVars)
 
-# create a stack
-# if using TIFFs, use this line
+# get the rasters
 raslist <- list.files(pattern = ".tif$", recursive = TRUE)
-# if using native R rasters, use this line
-#raslist <- list.files(pattern = ".grd$")
 
-# find temporal vars (placed in subfolders)
-raslist.t <- raslist[grep("/",raslist,fixed = TRUE)]
-# exclude temporal vars, for the moment
-# raslist <- raslist[-grep("/",raslist,fixed = TRUE)]
+# get short names from the DB
+# first shorten names in subfolders
+raslist.short <- unlist(
+  lapply(strsplit(raslist, "/"), function(x) {x[length(x)]})
+)
 
-gridlist <- as.list(paste(loc_envVars,raslist,sep = "/"))
-nm <- substr(raslist,1,nchar(raslist) - 4)
-names(gridlist) <- nm
+db <- dbConnect(SQLite(),dbname=nm_db_file)
+SQLQuery <- "select gridName, fileName from lkpEnvVars;"
+evs <- dbGetQuery(db, SQLQuery)
+shrtNms <- merge(data.frame(fileName = raslist.short, path = raslist, fullpath = paste0(loc_envVars, "/", raslist), 
+                            stringsAsFactors = FALSE), evs, all.x = T)
+dbDisconnect(db)
+
+# ###
+# gridlist <- as.list(paste(loc_envVars,shrtNms$path,sep = "/"))
+# #nm <- substr(shrtNms$path,1,nchar(shrtNms$path) - 4) # remove .tif extension
+# names(gridlist) <- raslist.short
+# 
+# gridlist <- gridlist[order(names(gridlist))]
+# names(gridlist) <- shrtNms[order(shrtNms$fileName),"gridName"]
+# 
+# nulls <- gridlist[is.na(names(gridlist))]
+#if(length(nulls) > 0){
+if (any(is.na(shrtNms$gridName))) {
+  print(shrtNms$fileName[is.na(shrtNms$gridName)])
+  stop("Some grids are not in DB.")
+}
 
 # check to make sure there are no names greater than 10 chars
-nmLen <- unlist(lapply(nm, nchar))
+nmLen <- nchar(shrtNms$gridName)
 max(nmLen) # if this result is greater than 10, you've got a renegade
 
 # Set working directory to the random points location
@@ -41,47 +55,96 @@ db <- dbConnect(SQLite(),dbname=nm_db_file)
 SQLQuery <- paste0("SELECT MODTYPE m FROM lkpSpecies WHERE sp_code = '", model_species, "';")
 modType <- dbGetQuery(db, SQLQuery)$m
 
-SQLQuery <- paste0("SELECT gridName g FROM lkpEnvVars WHERE use_",modType," = 1;")
-gridlistSub <- dbGetQuery(db, SQLQuery)$g
+# if modtype is both (B), flip it to A or T
+# what git branch are we on?
+#branches <- system("git branch", intern = TRUE)
+#activeBranch <- branches[grep("\\*", branches)]
+#activeBranch <- sub("\\*", "", activeBranch)
+#activeBranch <- gsub(" ", "", activeBranch)
+activeBranch <- git2r::repository_head()$name
 
-# get just names of grids (removes folder for temporal vars)
-justTheNames <- unlist(lapply(strsplit(names(gridlist), "/", fixed = TRUE), FUN = function(x) {x[length(x)]}))
+
+if(modType == "B"){
+  if(activeBranch == "terrestrial") modType <- "T"
+  if(activeBranch == "aquatic") modType <- "A"
+}
+
+# gridlistSub is a running list of variables to use. Uses fileName from lkpEnvVars
+SQLQuery <- paste0("SELECT gridName, fileName FROM lkpEnvVars WHERE use_",modType," = 1;")
+gridlistSub <- dbGetQuery(db, SQLQuery)
+gridlistSub$fileName <- gsub(".tif$","",gridlistSub$fileName)
+gridlistSub$gridName <- tolower(gridlistSub$gridName)
+dbDisconnect(db)
 
 ## account for add/remove vars
 if (!is.null(add_vars)) {
   add_vars1 <- add_vars
   add_vars <- tolower(add_vars)
-
+  
   db <- dbConnect(SQLite(),dbname=nm_db_file)
-  SQLQuery <- paste0("SELECT gridName g FROM lkpEnvVars;")
-  gridlistAll <- tolower(dbGetQuery(db, SQLQuery)$g)
+  SQLQuery <- paste0("SELECT gridName, fileName FROM lkpEnvVars;")
+  gridlistAll <- dbGetQuery(db, SQLQuery)
+  gridlistAll$fileName <- gsub(".tif$","",gridlistAll$fileName)
+  gridlistAll$gridName <- tolower(gridlistAll$gridName)
   dbDisconnect(db)
   
-  if (!all(add_vars %in% gridlistAll)) {
+  if (!all(add_vars %in% gridlistAll$gridName)) {
     stop("Some environmental variables listed in `add_vars` were not found in `nm_EnvVars` dataset: ",
-         paste(add_vars1[!add_vars %in% gridlistSub], collapse = ", "), ".")
+         paste(add_vars1[!add_vars %in% gridlistAll$gridName], collapse = ", "), ".")
   }
-  gridlistSub <- c(gridlistSub, add_vars)
+  # add the variables
+  add_vars_df <- gridlistAll[gridlistAll$gridName %in% add_vars,]
+  gridlistSub <- rbind(gridlistSub, add_vars_df)
 }
 if (!is.null(remove_vars)) {
   remove_vars1 <- remove_vars
   remove_vars <- tolower(remove_vars)
-  if (!all(remove_vars %in% gridlistSub)) {
+  if (!all(remove_vars %in% gridlistSub$gridName)) {
     message("Some environmental variables listed in `remove_vars` were not found in the `nm_EnvVars` dataset: ",
-            paste(remove_vars1[!remove_vars %in% gridlistSub], collapse = ", "), ".")
+            paste(remove_vars1[!remove_vars %in% gridlistSub$gridName], collapse = ", "), ".")
   } 
-  gridlistSub <- gridlistSub[!tolower(gridlistSub) %in% tolower(remove_vars)]
+  # remove the variables
+  gridlistSub <- gridlistSub[!tolower(gridlistSub$gridName) %in% tolower(remove_vars),]
 }
+# remove duplicates, then subset
+gridlistSub <- gridlistSub[!duplicated(gridlistSub),]
+# fullL <- gridlist[names(gridlist) %in% tolower(gridlistSub$gridName)]
+fullL1 <- shrtNms[shrtNms$gridName %in% tolower(gridlistSub$gridName),]
+fullL1$subfolder <- unlist(lapply(fullL1$path, FUN = function(x) {
+  s <- strsplit(x, "/")[[1]] 
+  if (length(s) > 1) paste0(s[1],".") else ""}
+))
+fullL <- as.list(fullL1$fullpath)
+names(fullL) <- paste(fullL1$subfolder, fullL1$gridName, sep = "")
+
+
+# Could use this script here crop/mask rasters
+#source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
+#envStack <- stack(newL)
 
 # make grid stack with subset
-envStack <- stack(gridlist[tolower(justTheNames) %in% tolower(gridlistSub)]) # points are transformed to raster CRS, if not matching
-rm(justTheNames, gridlistSub, modType)
+envStack <- stack(fullL)
+rm(fullL, gridlistSub, modType, activeBranch)
 
 # extract raster data to points ----
-##  Bilinear interpolation is a *huge* memory hog. 
-##  Do it all as 'simple' 
 
-points_attributed <- extract(envStack, shpf, method="simple", sp=TRUE)
+# Extract values to a data frame - multicore approach using snowfall
+# First, convert raster stack to list of single raster layers
+s.list <- unstack(envStack)
+names(s.list) <- names(envStack)
+# Now, create a R cluster using all the machine cores minus one
+sfInit(parallel=TRUE, cpus=parallel:::detectCores()-1)
+# Load the required packages inside the cluster
+sfLibrary(raster)
+sfLibrary(sf)
+# Run parallelized 'extract' function and stop cluster
+e.df <- sfSapply(s.list, extract, y=shpf, method = "simple")
+sfStop()
+
+points_attributed <- st_sf(cbind(data.frame(shpf), data.frame(e.df)))
+
+# method without using snowfall
+#points_attributed <- extract(envStack, shpf, method="simple", sp=TRUE)
 
 # temporal variables data handling
 pa <- points_attributed
@@ -103,9 +166,9 @@ if (length(tv) > 0) {
     
     # DECIDE IF THERE SHOULD BE A CUTOFF FOR WHEN OBSERVATION YEAR IS NOT CLOSE TO ANY OF THE DATES #
     
-    vals <- unlist(lapply(1:length(pa), FUN = function(x) {
-      eval(parse(text = paste0("pa$", tvDataYear.s$dataset[1],"_",closestYear[x],".",i, "[", x , "]")
-                 ))
+    vals <- unlist(lapply(1:length(pa$date), FUN = function(x) {
+      eval(parse(text = paste0("pa$", tvDataYear.s$dataset[1],"_",closestYear[x],".",i, "[", x ,"]")
+      ))
     }))
     
     # add to pa
@@ -116,7 +179,13 @@ if (length(tv) > 0) {
 }
 suppressWarnings(rm(tv,tvDataYear,tvDataYear.s, yrs, closestYear, vals, pa))
 
-# write it out ----
-filename <- paste(baseName, "_att.shp", sep="")
-points_attributed <- st_as_sf(points_attributed)
-st_write(points_attributed, paste0("model_input/", filename), delete_layer = T)
+# write it out to the att db
+dbName <- paste(baseName, "_att.sqlite", sep="")
+db <- dbConnect(SQLite(), paste0("model_input/",dbName))
+att_dat <- points_attributed
+st_geometry(att_dat) <- NULL
+
+dbWriteTable(db, paste0(baseName, "_att"), att_dat)
+dbDisconnect(db)
+rm(db)
+
