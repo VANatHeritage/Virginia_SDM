@@ -28,7 +28,7 @@ rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(
 conus <- st_read(nm_refBoundaries)
 rangeClipped <- st_intersection(st_transform(rangeDissHolesFilled, st_crs(conus)), conus)
 # write out a dissolved version of hucRange for 'study area'
-st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")))
+st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")), delete_layer = T)
 
 rm(hucRange, rangeDissolved, rangeDissHolesFilled, conus)
 
