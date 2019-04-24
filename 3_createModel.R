@@ -522,24 +522,31 @@ dbDisconnect(db)
 ###
 #get the order for the importance charts
 ord <- order(EnvVars$impVal, decreasing = TRUE)[1:length(indVarCols)]
-#set up a list to hold the plot data
-n.plots <- min(c(length(f.imp), 9))
-pPlots <- vector("list",n.plots)
-		names(pPlots) <- c(1:n.plots)
-#get the top partial plots
+pPlotListLen <- min(c(length(ord), 9))
+
+# sub-sample df.full for the partial plots
 pplotSamp <- min(c(length(df.full[,1])/10, 10000)) # take 10% of samples, or 10000, whichever is less
 pplotSamp <- sample(1:length(df.full[,1]), size = round(pplotSamp), replace = F)
-for(i in 1:n.plots){
-  curvar <- names(f.imp[ord[i]])
-  pPlots[[i]] <- do.call("partialPlot", list(x = rf.full, pred.data = df.full[pplotSamp,indVarCols],
-                                             x.var = curvar,
-                                             which.class = 1,
-                                             plot = FALSE))
-  pPlots[[i]]$gridName <- curvar
-  pPlots[[i]]$fname <- EnvVars$fullName[ord[i]]
-  cat("finished partial plot ", i, " of ",n.plots, "\n")
-}
-rm(curvar)
+df.full.pplot <- df.full[pplotSamp,indVarCols]
+
+# cluster pPlots
+message("Working on ", pPlotListLen, " partial plots...")
+ls.pp <- as.list(names(f.imp[ord][1:pPlotListLen]))
+cl <- makeCluster(min(parallel::detectCores() - 1, pPlotListLen), type = "SOCK") 
+clusterExport(cl, list("rf.full","df.full.pplot","ls.pp","EnvVars"), envir = environment()) 
+clusterEvalQ(cl, library(randomForest)) 
+pPlots <- snow::parLapply(cl, x = ls.pp, fun = function(x) {
+  pp <- do.call("partialPlot", list(x = rf.full, pred.data = df.full.pplot,
+                                    x.var = x,
+                                    which.class = 1,
+                                    plot = FALSE))
+  pp$gridName <- x
+  pp$fname <- EnvVars$fullName[EnvVars$gridName==x]
+  return(pp)
+})
+names(pPlots) <- 1:length(pPlots)
+stopCluster(cl)
+rm(ls.pp)
 
 # save the project, return to the original working directory
 dir.create(paste0(loc_model, "/", model_species,"/outputs/rdata"), recursive = T, showWarnings = F)
