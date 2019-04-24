@@ -11,6 +11,7 @@ library(vcd)     #for kappa stats
 library(abind)   #for collapsing the nested lists
 library(foreign) #for reading dbf files
 library(randomForest)
+library(snow)
 source(paste0(loc_scripts, "/helper/modelrun_meta_data.R"), local = T) # generates modelrun_meta_data
 
 setwd(loc_model)
@@ -556,28 +557,36 @@ dbDisconnect(db)
 ###
 # partial plot data ----
 ###
+
 #get the order for the importance charts
-ord <- order(EnvVars$impVal, decreasing = TRUE)[1:length(indVarCols)]
-if(length(ord) > 9){
-  pPlotListLen <- 9
-} else {
-  pPlotListLen <- length(ord)
-}
-#set up a list to hold the plot data
-pPlots <- vector("list",pPlotListLen)
-names(pPlots) <- c(1:pPlotListLen)
-#get the top eight partial plots
-for(i in 1:pPlotListLen){
-  curvar <- names(f.imp[ord[i]])
-  pPlots[[i]] <- do.call("partialPlot", list(x = rf.full, pred.data = df.full[,indVarCols],
-                                             x.var = curvar,
-                                             which.class = 1,
-                                             plot = FALSE))
-  pPlots[[i]]$gridName <- curvar
-  pPlots[[i]]$fname <- EnvVars$fullName[ord[i]]
-  cat("finished partial plot ", i, " of ", pPlotListLen, "\n")
-}
-rm(curvar)
+ord <- order(EnvVars$impVal, decreasing = TRUE)
+pPlotListLen <- min(c(length(ord), 9))
+
+# sample 1/0 equal to prevalance in df.full
+pplotSampN <- min(c(length(df.full[,1])/10, 10000)) # take 10% of samples, or 10000, whichever is less
+sampprop <- length(df.full$pres[df.full$pres==1])/length(df.full$pres)
+pplotSamp <- c(sample((1:length(df.full$pres))[df.full$pres==1], size = ceiling(pplotSampN*sampprop), replace = F),
+               sample((1:length(df.full$pres))[df.full$pres==0], size = ceiling(pplotSampN*(1-sampprop)), replace = F))
+df.full.pplot <- df.full[pplotSamp,indVarCols]
+
+# cluster pPlots
+message("Working on ", pPlotListLen, " partial plots...")
+ls.pp <- as.list(names(f.imp[ord][1:pPlotListLen]))
+cl <- makeCluster(min(parallel::detectCores() - 1, pPlotListLen), type = "SOCK") 
+clusterExport(cl, list("rf.full","df.full.pplot","ls.pp","EnvVars"), envir = environment()) 
+clusterEvalQ(cl, library(randomForest)) 
+pPlots <- snow::parLapply(cl, x = ls.pp, fun = function(x) {
+  pp <- do.call("partialPlot", list(x = rf.full, pred.data = df.full.pplot,
+                                    x.var = x,
+                                    which.class = 1,
+                                    plot = FALSE))
+  pp$gridName <- x
+  pp$fname <- EnvVars$fullName[EnvVars$gridName==x]
+  return(pp)
+})
+names(pPlots) <- 1:length(pPlots)
+stopCluster(cl)
+rm(ls.pp, df.full.pplot, sampprop, pplotSamp, pplotSampN)
 
 # save the project, return to the original working directory
 dir.create(paste0(loc_model, "/", model_species,"/outputs/rdata"), recursive = T, showWarnings = F)
