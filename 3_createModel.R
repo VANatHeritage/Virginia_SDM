@@ -563,21 +563,25 @@ if(length(ord) > 9){
 } else {
   pPlotListLen <- length(ord)
 }
-#set up a list to hold the plot data
-pPlots <- vector("list",pPlotListLen)
-names(pPlots) <- c(1:pPlotListLen)
-#get the top eight partial plots
-for(i in 1:pPlotListLen){
-  curvar <- names(f.imp[ord[i]])
-  pPlots[[i]] <- do.call("partialPlot", list(x = rf.full, pred.data = df.full[,indVarCols],
-                                             x.var = curvar,
+
+# cluster pPlots
+message("Working on ", pPlotListLen, " partial plots...")
+ls.pp <- as.list(names(f.imp[ord][1:pPlotListLen]))
+cl <- makeCluster(min(parallel::detectCores() - 1, pPlotListLen), type = "SOCK") 
+clusterExport(cl, list("rf.full","df.full","indVarCols","ls.pp","EnvVars"), envir = environment()) 
+clusterEvalQ(cl, library(randomForest)) 
+pPlots <- snow::parLapply(cl, x = ls.pp, fun = function(x) {
+  pp <- do.call("partialPlot", list(x = rf.full, pred.data = df.full[,indVarCols],
+                                             x.var = x,
                                              which.class = 1,
                                              plot = FALSE))
-  pPlots[[i]]$gridName <- curvar
-  pPlots[[i]]$fname <- EnvVars$fullName[ord[i]]
-  cat("finished partial plot ", i, " of ", pPlotListLen, "\n")
-}
-rm(curvar)
+  pp$gridName <- x
+  pp$fname <- EnvVars$fullName[EnvVars$gridName==x]
+  return(pp)
+})
+names(pPlots) <- 1:length(pPlots)
+stopCluster(cl)
+rm(ls.pp)
 
 # save the project, return to the original working directory
 dir.create(paste0(loc_model, "/", model_species,"/outputs/rdata"), recursive = T, showWarnings = F)
