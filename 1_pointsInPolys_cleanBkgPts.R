@@ -191,22 +191,33 @@ st_write(ranPts.joined, nm.RanPtFile, driver="ESRI Shapefile", delete_layer = TR
 # get range info from the DB (as a list of HUCs)
 db <- dbConnect(SQLite(),dbname=nm_db_file)
 egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", model_species, "';"))[1,1]
-SQLquery <- paste0("SELECT huc10_id from lkpRange WHERE EGT_ID = ", egt, ";")
+#SQLquery <- paste0("SELECT huc10_id from lkpRange WHERE EGT_ID = ", egt, ";")
                   # inner join lkpSpecies on lkpRange.EGT_ID = lkpSpecies.EGT_ID
                   # where lkpSpecies.sp_code = '", model_species, "';")
-hucList <- dbGetQuery(db, statement = SQLquery)$huc10_id
-if (length(hucList) == 0) {
+#hucList <- dbGetQuery(db, statement = SQLquery)$huc10_id
+#if (length(hucList) == 0) {
   message("Calculating HUC10 range...")
   # auto-range (intersecting huc10s + huc10s that they border)
   huc10 <- st_read(paste0(loc_scripts, "/_data/other_spatial/feature/HUC10.shp"))
   sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
-  sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
-  hucList <- sti2$HUC_10
+  hucList <- sti$HUC_10
+  if (!is.null(huc_level)) {
+    # dissolves to desired huc_level
+    browser()
+    huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
+    hucsub <- substr(hucList, 1, huc_level)
+    hucList <- huc10$HUC_10[huc10$huclev %in% hucsub]
+  } else {
+    # uses a one huc-10 buffer to define range
+    sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
+    hucList <- sti2$HUC_10
+  }
   rm(sti, sti2, huc10)
-  hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = model_species, version_info = as.character(Sys.Date()), 
-                      comments = "auto-generated: intersecting HUC-10 + 1-HUC10 buffer")
+  hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = fn_args$baseName, version_info = as.character(Sys.Date()), 
+                      comments = paste0("auto-generated using ", 
+                                        ifelse(is.null(huc_level), "intersecting HUC-10s + 1-HUC-10 buffer", paste0("a huc_level of ", huc_level))))
   dbWriteTable(db, "lkpRange", hucdf, append = T)
-}
+#}
 dbDisconnect(db)
 rm(db)
 

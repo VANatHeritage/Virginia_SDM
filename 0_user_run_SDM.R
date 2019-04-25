@@ -44,7 +44,10 @@ add_vars = NULL
 # list standard variables to exclude from model run
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
-prompt = FALSE
+prompt = T
+
+# dissolve HUC level for defining ranges, based on HUC-10 interesections, so can be set to 2,4,6,8,10. Set NULL for automatic: intersecting HUC-10s + 1 HUC-10 buffer.
+huc_level = 4
 
 # set wd and load function
 setwd(loc_scripts)
@@ -75,6 +78,7 @@ run_SDM(
   add_vars = add_vars,
   remove_vars = remove_vars,
   project_blurb = project_blurb,
+  huc_level = huc_level,
   prompt = prompt
 )
 

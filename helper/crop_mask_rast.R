@@ -8,9 +8,9 @@ library(smoothr)
 ########################################
 # get range info from the DB (as a list of HUCs)
 db <- dbConnect(SQLite(),dbname=nm_db_file)
-SQLquery <- paste0("SELECT huc10_id from lkpRange
-                   inner join lkpSpecies on lkpRange.EGT_ID = lkpSpecies.EGT_ID
-                   where lkpSpecies.sp_code = '", model_species, "';")
+SQLquery <- paste0("SELECT huc10_id from lkpRange WHERE occurrence = '", fn_args$baseName, "';")
+                  # inner join lkpSpecies on lkpRange.EGT_ID = lkpSpecies.EGT_ID
+                  # where lkpSpecies.sp_code = '", model_species, "';")
 hucList <- dbGetQuery(db, statement = SQLquery)$huc10_id
 dbDisconnect(db)
 rm(db)
