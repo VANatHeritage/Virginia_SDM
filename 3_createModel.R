@@ -34,8 +34,10 @@ set.seed(seed)
 # get species info
 SQLquery <- paste("SELECT scientific_name SciName, common_name CommName, sp_code Code, broad_group Type, egt_id, g_rank, rounded_g_rank, s_rank, rounded_s_rank FROM lkpSpecies WHERE sp_code = '", model_species,"';", sep="")
 ElementNames <- as.list(dbGetQuery(db, statement = SQLquery)[1,])
+
 tblModelInputs <- data.frame(table_code = baseName, EGT_ID = ElementNames$EGT_ID, datetime = as.character(Sys.time()),
-                             feat_count = length(df.in$group_id), 
+                             filename_pres = nm_presFile, filename_bkgd = paste(nm_bkg, collapse = "."),
+                             feat_count = length(df.in$group_id),  
                              feat_grp_count = length(unique(df.in$group_id)), 
                              obs_count = length(df.in[,1]), bkgd_count = length(df.abs[,1]),
                              range_area_sqkm = NA)
