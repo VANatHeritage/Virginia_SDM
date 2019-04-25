@@ -75,6 +75,7 @@ run_SDM <- function(
       modeller = modeller,
       add_vars = add_vars,
       remove_vars = remove_vars,
+      huc_level = huc_level,
       baseName = baseName,
       project_blurb = project_blurb)
   }
