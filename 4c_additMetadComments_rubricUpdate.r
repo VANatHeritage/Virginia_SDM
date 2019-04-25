@@ -29,11 +29,19 @@ SQLquery <- paste("SELECT * ",
                   "WHERE model_run_name ='", model_run_name , "'; ", sep="")
 dat.in.db <- dbGetQuery(db, statement = SQLquery)
 newText <- fn_args$metaData_comments
+# add/remove vars comment
+if (!is.null(fn_args$add_vars)) {
+  add.comm <- paste0(" Non-standard variables (", paste(fn_args$add_vars, collapse = ", "), ") were included in this model.")
+  newText <- paste0(newText, add.comm)
+}
+if (!is.null(fn_args$remove_vars)) {
+  add.comm <- paste0(" The standard variables (", paste(fn_args$remove_vars, collapse = ", "), ") were excluded from this model.")
+  newText <- paste0(newText, add.comm)
+}
 #clean up newline chars, send it to the DB
 newText <- gsub("\n", " ", newText)
 # update row if necessary
 if (dat.in.db$metadata_comments != newText) {
-
   SQLquery <- paste("UPDATE tblModelResults ",
                     "SET metadata_comments = '", newText, 
                     "' WHERE model_run_name = '", 

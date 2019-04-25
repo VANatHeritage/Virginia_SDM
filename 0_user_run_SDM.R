@@ -124,16 +124,16 @@ run_SDM(
   begin_step = "2",
   model_species = model_species,
   loc_model = loc_model,
-  add_vars = c("radsumsol","rgh1cx100","isotherm"),
-  remove_vars = c("elevx10","distpond","impsur1","impsur10","impsur100"),
+  add_vars = c("Isotherm","radequinx"),
+  remove_vars = c("elevx10","radwinsol"),
   prompt = F
 )
 
 # example pick-up a model run at step 3; uses most recent settings from previous run_SDM run
 run_SDM(
-  loc_model = loc_model,
   begin_step = "3",
   model_species = model_species,
+  loc_model = loc_model,
 )
 
 # example pick-up a model run at step 4c (metadata/comment update)
@@ -144,8 +144,8 @@ run_SDM(
   model_species = model_species,
   loc_model = loc_model,
   model_rdata = model_rdata,
-  model_comments = "Testing out model comments.",
-  metaData_comments = "This is an updated comment that will appear in the metadata PDF."
+  model_comments = "UPDATE TEST.",
+  metaData_comments = "UPDATE TEST: This is an updated comment that will appear in the metadata PDF."
 )
 
 ########## 
