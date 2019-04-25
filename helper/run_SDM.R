@@ -83,20 +83,8 @@ run_SDM <- function(
   # add comments for added/excluded vars
   if (!hasArg(model_comments)) model_comments <- fn_args$model_comments
   if (!hasArg(metaData_comments)) metaData_comments <- fn_args$metaData_comments
-  if (!is.null(add_vars)) {
-    fn_args$add_vars <- add_vars
-    model_comments <- paste0("Non-standard variables (", paste(add_vars, collapse = ", "), ") were included in this model. ", model_comments)
-    fn_args$model_comments <- model_comments
-    metaData_comments <- paste0("Non-standard variables (", paste(add_vars, collapse = ", "), ") were included in this model. ", metaData_comments)
-    fn_args$metaData_comments <- metaData_comments
-  }
-  if (!is.null(remove_vars)) {
-    fn_args$remove_vars <- remove_vars
-    model_comments <- paste0("The standard variables (", paste(remove_vars, collapse = ", "), ") were excluded from this model. ", model_comments)
-    fn_args$model_comments <- model_comments
-    metaData_comments <- paste0("The standard variables (", paste(remove_vars, collapse = ", "), ") were excluded from this model. ", metaData_comments)
-    fn_args$metaData_comments <- metaData_comments
-  }
+  if (!is.null(add_vars)) fn_args$add_vars <- add_vars
+  if (!is.null(remove_vars)) fn_args$remove_vars <- remove_vars
   # save fn_args
   dir.create(paste0(loc_model, "/" , model_species), showWarnings = F)
   save(fn_args, file = paste0(loc_model, "/" , model_species, "/runSDM_paths.Rdata"))

@@ -602,6 +602,15 @@ save(list = ls.save, file = paste0("rdata/", model_run_name,".Rdata"), envir = e
 # write model metadata to db
 # tblModelResults
 db <- dbConnect(SQLite(),dbname=nm_db_file)  
+# add/remove vars internal comment update
+if (!is.null(fn_args$add_vars)) {
+  add.comm <- paste0(" Non-standard variables (", paste(fn_args$add_vars, collapse = ", "), ") were included in this model.")
+  model_comments <- paste0(model_comments, add.comm)
+}
+if (!is.null(fn_args$remove_vars)) {
+  add.comm <- paste0(" The standard variables (", paste(fn_args$remove_vars, collapse = ", "), ") were excluded from this model.")
+  model_comments <- paste0(model_comments, add.comm)
+}
 tblModelResults <- data.frame(model_run_name = model_run_name, EGT_ID = ElementNames$EGT_ID, table_code = baseName,
                               internal_comments = model_comments, metadata_comments = metaData_comments,
                               model_comp_name = model_comp_name, modeller = modeller,
