@@ -203,7 +203,6 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
   hucList <- sti$HUC_10
   if (!is.null(huc_level)) {
     # dissolves to desired huc_level
-    browser()
     huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
     hucsub <- substr(hucList, 1, huc_level)
     hucList <- huc10$HUC_10[huc10$huclev %in% hucsub]

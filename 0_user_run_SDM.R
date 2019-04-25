@@ -39,7 +39,7 @@ modeller = "David Bucklin"
 # project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
 project_blurb <- "Project Blurb from `project_blurb`."
 
-# list non-standard variables to add to model run
+# list non-standard variables to add to model run. Need to be already attributed in background points
 add_vars = NULL
 # list standard variables to exclude from model run
 remove_vars = NULL
@@ -47,7 +47,7 @@ remove_vars = NULL
 prompt = T
 
 # dissolve HUC level for defining ranges, based on HUC-10 interesections, so can be set to 2,4,6,8,10. Set NULL for automatic: intersecting HUC-10s + 1 HUC-10 buffer.
-huc_level = 4
+huc_level = 8
 
 # set wd and load function
 setwd(loc_scripts)
@@ -115,39 +115,36 @@ loc_scripts <- here()
 setwd(loc_scripts)
 source(here("helper", "run_SDM.R"))
 
+
 # example pick-up a model run at step 2 (same presence/bkgd data, new model with different variables)
-  # need to provide an input tableCode to nm_presFile 
-  # to add/remove variables, begin at step 2
-  # to just run new model, begin at step 3 (see next example)
+# need to provide an input tableCode to nm_presFile 
+# to add/remove variables, begin at step 2
+# to just run new model, begin at step 3 (see next example)
+run_SDM(
+  begin_step = "2",
+  model_species = model_species,
+  loc_model = loc_model,
+  add_vars = c("radsumsol","rgh1cx100","isotherm"),
+  remove_vars = c("elevx10","distpond","impsur1","impsur10","impsur100"),
+  prompt = F
+)
+
+# example pick-up a model run at step 3; uses most recent settings from previous run_SDM run
+run_SDM(
+  loc_model = loc_model,
+  begin_step = "3",
+  model_species = model_species,
+)
+
+# example pick-up a model run at step 4c (metadata/comment update)
+# if starting at step 4 or later, must provide model run name to model_rdata
 model_rdata <- gsub(".Rdata", "", max(list.files(here("_data","species",model_species,"outputs","rdata"))))
 run_SDM(
   begin_step = "4c",
   model_species = model_species,
   loc_model = loc_model,
-  model_rdata = model_rdata
-)
-
-# example pick-up a model run at step 5 (metadata create)
-  # if starting at step 4 or later, must provide model run name to model_rdata
-run_SDM(
-  begin_step = "5",
-  model_species = "chrocumb",
-  loc_model = loc_model,
-  model_rdata = "chrocumb_20190116_142650",
-  metaData_comments = "This is an updated comment that will appear in the metadata PDF."
-)
-
-
-
-# example pick-up a model run at step 4c (metadata/comment update)
-# if starting at step 4 or later, must provide model run name to model_rdata
-run_SDM(
-  begin_step = "4c",
-  model_species = "chrocumb",
-  loc_model = loc_model,
-  #rubric_default = rubric_default,
-  model_rdata = "chrocumb_20190108_143402",
-  model_comments = "Testing out model model comments.",
+  model_rdata = model_rdata,
+  model_comments = "Testing out model comments.",
   metaData_comments = "This is an updated comment that will appear in the metadata PDF."
 )
 
@@ -163,7 +160,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "aneushar"
+model_species <- "abiefras"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

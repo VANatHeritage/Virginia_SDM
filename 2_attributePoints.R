@@ -18,8 +18,14 @@ raslist.short <- unlist(
   lapply(strsplit(raslist, "/"), function(x) {x[length(x)]})
 )
 
+# get MODTYPE
 db <- dbConnect(SQLite(),dbname=nm_db_file)
-SQLQuery <- "select gridName, fileName from lkpEnvVars;"
+SQLQuery <- paste0("SELECT MODTYPE m FROM lkpSpecies WHERE sp_code = '", model_species, "';")
+modType <- dbGetQuery(db, SQLQuery)$m
+
+# shrtNms contains all variables in loc_envVars. Merged with Database info using fileName (no path, with file extension)
+db <- dbConnect(SQLite(),dbname=nm_db_file)
+SQLQuery <- paste0("select gridName, fileName, use_", modType, " use from lkpEnvVars;")
 evs <- dbGetQuery(db, SQLQuery)
 shrtNms <- merge(data.frame(fileName = raslist.short, path = raslist, fullpath = paste0(loc_envVars, "/", raslist), 
                             stringsAsFactors = FALSE), evs, all.x = T)
@@ -49,12 +55,6 @@ setwd(paste0(loc_model, "/", model_species, "/inputs"))
 
 shpf <- st_read(paste0("presence/", baseName, "_RanPts.shp"),quiet = T)
 
-# subset input env. vars by model type (terrestrial, shore, etc)
-db <- dbConnect(SQLite(),dbname=nm_db_file)
-# get MODTYPE
-SQLQuery <- paste0("SELECT MODTYPE m FROM lkpSpecies WHERE sp_code = '", model_species, "';")
-modType <- dbGetQuery(db, SQLQuery)$m
-
 # if modtype is both (B), flip it to A or T
 # what git branch are we on?
 #branches <- system("git branch", intern = TRUE)
@@ -63,53 +63,36 @@ modType <- dbGetQuery(db, SQLQuery)$m
 #activeBranch <- gsub(" ", "", activeBranch)
 activeBranch <- git2r::repository_head()$name
 
-
 if(modType == "B"){
   if(activeBranch == "terrestrial") modType <- "T"
   if(activeBranch == "aquatic") modType <- "A"
 }
 
-# gridlistSub is a running list of variables to use. Uses fileName from lkpEnvVars
-SQLQuery <- paste0("SELECT gridName, fileName FROM lkpEnvVars WHERE use_",modType," = 1;")
-gridlistSub <- dbGetQuery(db, SQLQuery)
-gridlistSub$fileName <- gsub(".tif$","",gridlistSub$fileName)
-gridlistSub$gridName <- tolower(gridlistSub$gridName)
-dbDisconnect(db)
+# gridlistSub is a running list of variables to use, using gridName from database
+gridlistSub <- unique(shrtNms$gridName[shrtNms$use==1])
 
-## account for add/remove vars
+## account for add/remove vars. All matching done on the fly with tolower; actual values do not change.
 if (!is.null(add_vars)) {
-  add_vars1 <- add_vars
-  add_vars <- tolower(add_vars)
-  
-  db <- dbConnect(SQLite(),dbname=nm_db_file)
-  SQLQuery <- paste0("SELECT gridName, fileName FROM lkpEnvVars;")
-  gridlistAll <- dbGetQuery(db, SQLQuery)
-  gridlistAll$fileName <- gsub(".tif$","",gridlistAll$fileName)
-  gridlistAll$gridName <- tolower(gridlistAll$gridName)
-  dbDisconnect(db)
-  
-  if (!all(add_vars %in% gridlistAll$gridName)) {
+  if (!all(tolower(add_vars) %in% tolower(shrtNms$gridName))) {
     stop("Some environmental variables listed in `add_vars` were not found in `nm_EnvVars` dataset: ",
-         paste(add_vars1[!add_vars %in% gridlistAll$gridName], collapse = ", "), ".")
+         paste(add_vars[!tolower(add_vars) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
   }
   # add the variables
-  add_vars_df <- gridlistAll[gridlistAll$gridName %in% add_vars,]
-  gridlistSub <- rbind(gridlistSub, add_vars_df)
+  add_vars_df <- shrtNms[tolower(shrtNms$gridName) %in% tolower(add_vars),c("gridName")]
+  gridlistSub <- c(gridlistSub, add_vars_df)
 }
 if (!is.null(remove_vars)) {
-  remove_vars1 <- remove_vars
-  remove_vars <- tolower(remove_vars)
-  if (!all(remove_vars %in% gridlistSub$gridName)) {
-    message("Some environmental variables listed in `remove_vars` were not found in the `nm_EnvVars` dataset: ",
-            paste(remove_vars1[!remove_vars %in% gridlistSub$gridName], collapse = ", "), ".")
+  if (!all(tolower(remove_vars) %in% tolower(shrtNms$gridName))) {
+    message("Note: Some environmental variables listed in `remove_vars` were not found in the `nm_EnvVars` dataset: ",
+            paste(remove_vars[!tolower(remove_vars) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
   } 
   # remove the variables
-  gridlistSub <- gridlistSub[!tolower(gridlistSub$gridName) %in% tolower(remove_vars),]
+  gridlistSub <- gridlistSub[!tolower(gridlistSub) %in% tolower(remove_vars)]
 }
+
 # remove duplicates, then subset
-gridlistSub <- gridlistSub[!duplicated(gridlistSub),]
-# fullL <- gridlist[names(gridlist) %in% tolower(gridlistSub$gridName)]
-fullL1 <- shrtNms[shrtNms$gridName %in% tolower(gridlistSub$gridName),]
+gridlistSub <- gridlistSub[!duplicated(gridlistSub)]
+fullL1 <- shrtNms[tolower(shrtNms$gridName) %in% tolower(gridlistSub),]
 fullL1$subfolder <- unlist(lapply(fullL1$path, FUN = function(x) {
   s <- strsplit(x, "/")[[1]] 
   if (length(s) > 1) paste0(s[1],".") else ""}
@@ -124,7 +107,7 @@ names(fullL) <- paste(fullL1$subfolder, fullL1$gridName, sep = "")
 
 # make grid stack with subset
 envStack <- stack(fullL)
-rm(fullL, gridlistSub, modType, activeBranch)
+rm(fullL, fullL1, gridlistSub, modType, activeBranch)
 
 # extract raster data to points ----
 
@@ -185,7 +168,7 @@ db <- dbConnect(SQLite(), paste0("model_input/",dbName))
 att_dat <- points_attributed
 st_geometry(att_dat) <- NULL
 
-dbWriteTable(db, paste0(baseName, "_att"), att_dat)
+dbWriteTable(db, paste0(baseName, "_att"), att_dat, overwrite = T)
 dbDisconnect(db)
 rm(db)
 
