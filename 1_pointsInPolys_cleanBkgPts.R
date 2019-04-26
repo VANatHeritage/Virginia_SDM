@@ -165,10 +165,10 @@ proj4 <- dbGetQuery(dbEV, SQLQuery)$p
 shapef <- st_zm(st_sf(shapef[c("comid", "huc12")], geometry = st_as_sfc(shapef$wkt), crs = proj4))
 
 # find presence and presence-adjacent reaches by intersection
-bkgd.int <- st_intersects(shapef, st_buffer(st_union(pres.geom), 30), sparse = F) # remove from bkgd based on 30-m buffer around presences
+bkgd.int <- st_intersects(shapef, st_buffer(pres.geom, 30), sparse = F) # remove from bkgd based on 30-m buffer around presences
 bkgd.geom <- shapef[!apply(bkgd.int, 1, FUN = any),]
 if (length(bkgd.geom$geometry) > 10000) {
-  bkgd.geom <- bkgd.geom[sort(sample(as.numeric(row.names(bkgd.geom)), size = 10000, replace = F)),]
+  bkgd.geom <- bkgd.geom[sort(sample(nrow(bkgd.geom), size = 10000, replace = F)),]
 }
 
 # write species reach data

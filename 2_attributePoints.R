@@ -60,10 +60,7 @@ dbEV <- dbConnect(SQLite(),dbname=nm_bkg[1])
 SQLQuery <- paste0("SELECT * FROM ",nm_bkg[2],"_att WHERE COMID IN ('", paste(reaches$comid, collapse = "','"),"')") 
 EnvVars <- dbGetQuery(dbEV, SQLQuery)
 names(EnvVars) <- tolower(names(EnvVars))
-############
-# if (!all(gridlistSub %in% names(EnvVars))) stop("Some variables in `lkpEnvVarsAqua` are not in the background variable database.")
-############
-gridlistSub <- gridlistSub[gridlistSub %in% names(EnvVars)] # TESTING LINE - Removes unmatched variables
+if (!all(gridlistSub %in% names(EnvVars))) stop("Some variables in `lkpEnvVarsAqua` are not in the background variable database.")
 EnvVars <- EnvVars[c("comid",gridlistSub)]
 dbDisconnect(dbEV)
 
