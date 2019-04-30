@@ -475,7 +475,9 @@ tmap_mode("plot")
 
 ## this is CartoDB.Positron
 # mtype <- 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-basetiles <- read_osm(bbox, type = 'esri-topo') #,type = mtype, ext = 1.1) 
+basetiles <- NULL
+try(basetiles <- read_osm(bbox, type = 'esri-topo', ext = 1.1), silent = T) #,type = mtype, ext = 1.1) 
+if (is.null(basetiles)) basetiles <- read_osm(bbox, ext = 1.1)
 # try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1))
 
 # rasterize prediction

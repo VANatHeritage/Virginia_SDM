@@ -64,7 +64,8 @@ if (!all(gridlistSub %in% names(EnvVars))) stop("Some variables in `lkpEnvVarsAq
 EnvVars <- EnvVars[c("comid",gridlistSub)]
 
 # remove vars that have any NAs on presences
-narm <- names(EnvVars)[is.na(colSums(EnvVars,na.rm = F))]
+narm <- colSums(is.na(EnvVars)) > 0
+narm <- names(narm)[narm]
 if (length(narm) > 0) {
   message("Dropping the following variables due to NA values at presences:`", paste(narm, collapse = "`,`"), "`.")
   EnvVars <- EnvVars[!names(EnvVars) %in% narm]
