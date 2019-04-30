@@ -9,7 +9,7 @@ rm(list=ls())
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
 list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-model_species <- "hydrmaur"
+model_species <- "megawill"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -96,8 +96,6 @@ run_SDM(
 
 # If picking up from a previously started run, always
 # provide the begin_step, model_species, and loc_model.
-# When starting at script #4 or later, also provide the name of the 
-# model rdata file to 'model_rdata'. 
 # You can also include any other arguments that you wish to change from 
 # the previous run (e.g., model_comments or metaData_comments).
 # 
@@ -119,15 +117,14 @@ source(here("helper", "run_SDM.R"))
 
 
 # example pick-up a model run at step 2 (same presence/bkgd data, new model with different variables)
-# need to provide an input tableCode to nm_presFile 
 # to add/remove variables, begin at step 2
 # to just run new model, begin at step 3 (see next example)
 run_SDM(
   begin_step = "2",
   model_species = model_species,
   loc_model = loc_model,
-  add_vars = c("vc_ma"),
-  remove_vars = c("bfiws"),
+  add_vars =  c("VBL_RL_R","VBA_RWA_R","exp","JulAug_tempC","Flow_cfs","mean_diam","DCI_up","DOR"), # these can cause problems as character-types
+  remove_vars = c("Tidal","VE_MA"),
   prompt = F
 )
 
@@ -139,15 +136,15 @@ run_SDM(
 )
 
 # example pick-up a model run at step 4c (metadata/comment update)
-# if starting at step 4 or later, must provide model run name to model_rdata
-model_rdata <- gsub(".Rdata", "", max(list.files(here("_data","species",model_species,"outputs","rdata"))))
+# Always picks up the most recent model run for the species.
 run_SDM(
   begin_step = "4c",
   model_species = model_species,
   loc_model = loc_model,
-  model_rdata = model_rdata,
   model_comments = "UPDATE TEST.",
-  metaData_comments = "UPDATE TEST: This is an updated comment that will appear in the metadata PDF."
+  metaData_comments = "UPDATE TEST: This is an updated comment that will appear in the metadata PDF.",
+  project_overview = "Updated project overview...",
+  project_blurb = "Updated project blurb..."
 )
 
 ########## 
@@ -162,11 +159,11 @@ rm(list=ls())
 # so you need to have executed run_SDM in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "hydrmaur"
+model_species <- "megawill"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 
-# if debugging script 4 or later, also load the specific model output rdata file
-model_rdata <- max(list.files(here("_data","species",model_species,"outputs","rdata")))
-load(here("_data","species",model_species,"outputs","rdata",paste0(model_rdata)))
+# if debugging script 4 or later, also load the output rdata file
+model_rdata <- fn_args$modelrun_meta_data$model_run_name
+load(here("_data","species",model_species,"outputs","rdata",paste0(model_rdata, ".Rdata")))
 

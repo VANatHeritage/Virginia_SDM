@@ -10,9 +10,7 @@
 
 # Optional arguments for all runs include:
 # 1. begin_step: specify as the prefix of the step to begin with: one of ("1","2","3","4","4b","4c","5"). Defaults to "1".
-# 2. model_rdata: when beginning after step 3, you need to specify the Rdata file name (no file extension) for the model previously created. 
-# Will be looked for in the 'loc_model' folder
-# 3. prompt: if TRUE, the function will stop after each script, and ask if you want to continue. Defaults to FALSE.
+# 2. prompt: if TRUE, the function will stop after each script, and ask if you want to continue. Defaults to FALSE.
 
 run_SDM <- function(
   loc_scripts,
@@ -29,7 +27,6 @@ run_SDM <- function(
   metaData_comments = "",
   modeller = NULL,
   begin_step = "1",
-  model_rdata = NULL,
   add_vars = NULL,
   remove_vars = NULL,
   huc_level = NULL,
@@ -45,16 +42,8 @@ run_SDM <- function(
     stop("Valid 'huc_level' values are 0, 2, 4, 6, 8, 10, or 12.")
 
   if (begin_step != "1") {
-    if (begin_step %in% c("2","3")) {
-      message("Loading most recent saved runSDM settings...")
-      load(paste0(loc_model, "/" , model_species, "/runSDM_paths.Rdata"))
-    } else {
-      if (is.null(model_rdata) | is.null(loc_model)) {
-        stop("Must provide both 'loc_model' and 'model_rdata' for continuing a model run.")
-      } else {
-        load(paste0(loc_model, "/" , model_species, "/runSDM_paths.Rdata"))
-      }
-    }
+    message("Loading most recent saved runSDM settings...")
+    load(paste0(loc_model, "/" , model_species, "/runSDM_paths.Rdata"))
     # re-write modified variables
     for (na in names(fn_args)) {
       if (eval(parse(text = paste0("hasArg(",na,")")))) fn_args[[na]] <- eval(parse(text=na))
@@ -120,8 +109,11 @@ run_SDM <- function(
   run_steps <- step_names[match(begin_step, all_steps) : length(all_steps)]
   
   if (!begin_step %in% c("1","2","3")) {
-    if (is.null(model_rdata)) stop("Must provide .Rdata file name if starting after step 3.")
-    load(paste0(loc_model, "/", model_species, "/outputs/rdata/", model_rdata, ".Rdata"))
+    model_rdata <- fn_args$modelrun_meta_data$model_run_name
+    model_rdata_file <- paste0(loc_model, "/", model_species, "/outputs/rdata/", model_rdata, ".Rdata")
+    if (!file.exists(model_rdata_file)) stop("No Rdata file exists for the model run `", model_rdata, "`. Need to start with `begin_step` of 1-3.")
+    load(model_rdata_file)
+    rm(model_rdata, model_rdata_file)
   }
   
   # run scripts
