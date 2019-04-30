@@ -21,7 +21,7 @@ run_SDM <- function(
   nm_db_file,
   loc_model,
   nm_bkg,
-  nm_huc12 = nm_huc12,
+  nm_huc12,
   nm_refBoundaries,
   nm_aquaArea = NULL,
   project_overview = "",

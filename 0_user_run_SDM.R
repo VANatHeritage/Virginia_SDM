@@ -24,9 +24,9 @@ nm_presFile <- here("_data", "occurrence", paste0(model_species, ".shp"))
 nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp") # background grey reference lines in map
 
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_reaches")
+nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_reaches_VA") # use VA_rangewide for ellilanc
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_huc12 <- c(here("_data","env_vars","tabular", "background.sqlite"), "range_huc12")
+nm_huc12 <- c(here("_data","env_vars","tabular", "background.sqlite"), "range_huc12_VA") # use VA_rangewide for ellilanc
 # name of aquatic areas shapefile (for mapping; optional) [Aquatic-only variable]
 nm_aquaArea <- c(here("_data", "env_vars","tabular", "background.sqlite"), "nhdArea")
 

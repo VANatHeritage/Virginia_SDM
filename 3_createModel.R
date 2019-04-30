@@ -95,6 +95,14 @@ envvar_list[!envvar_list %in% names(df.in)]
 # the final envvar list is what is in the presence dataset
 envvar_list <- envvar_list[envvar_list %in% names(df.in)]
 
+# find >5% missing (NA) data (PAs only; Presences already have excluded any-NA vars)
+narm <- colSums(is.na(df.abs[names(df.abs) %in% envvar_list])) > nrow(df.abs)*0.05
+narm <- names(narm)[narm]
+if (length(narm) > 0) {
+  message("Dropping the following variables due to >5% missing data in training pseudo-absences:`", paste(narm, collapse = "`,`"), "`.")
+  envvar_list <- envvar_list[!envvar_list %in% names(narm)[narm]]
+}
+
 #clean up
 options(op)
 dbDisconnect(db)
@@ -386,25 +394,25 @@ if(length(group$vals)>2){
 	  # get threshold
 	  # max sensitivity plus specificity (maxSSS per Liu et al 2016)
 	  # create the prediction object for ROCR. Get pres col from votes (=named "1")
-	  # <- prediction(trRes[[i]]$votes[,"1"],trRes[[i]]$y)
-	  #sens <- performance(pred,"sens")
-	  #spec <- performance(pred,"spec")
-	  #sss <- data.frame(cutSens = unlist(sens@x.values),sens = unlist(sens@y.values),
-	  #                          cutSpec = unlist(spec@x.values), spec = unlist(spec@y.values))
-	  #sss$sss <- with(sss, sens + spec)
-	  #maxSSS <- sss[which.max(sss$sss),"cutSens"]
-    #cutval.rf <- c(maxSSS, 1-maxSSS)
-	  # names(cutval.rf) <- c("0","1")
+	  pred <- prediction(trRes[[i]]$votes[,"1"],trRes[[i]]$y)
+	  sens <- performance(pred,"sens")
+	  spec <- performance(pred,"spec")
+	  sss <- data.frame(cutSens = unlist(sens@x.values),sens = unlist(sens@y.values),
+	                            cutSpec = unlist(spec@x.values), spec = unlist(spec@y.values))
+    sss$sss <- with(sss, sens + spec)
+    maxSSS <- sss[which.max(sss$sss),"cutSens"]
+    cutval.rf <- c(1-maxSSS, maxSSS)
+    names(cutval.rf) <- c("0","1")
 	  
 	  # get MTP: minimum training presence (minimum votes recieved [probability]
 	  # for any training point)
-	  allVotesPrespts <- trRes[[i]]$votes[,"1"][trRes[[i]]$y == 1]
-	  MTP <- min(allVotesPrespts)
-	  cutval.rf <- c(1-MTP, MTP)
-	  names(cutval.rf) <- c("0","1")
-	  
+	  # allVotesPrespts <- trRes[[i]]$votes[,"1"][trRes[[i]]$y == 1]
+	  # MTP <- min(allVotesPrespts)
+	  # cutval.rf <- c(1-MTP, MTP)
+	  # names(cutval.rf) <- c("0","1")
+
 		#apply the cutoff to the validation data
-	  v.rf.pred.cut <- predict(trRes[[i]], evSet[[i]],type="response", cutoff=cutval.rf)
+    v.rf.pred.cut <- predict(trRes[[i]], evSet[[i]],type="response", cutoff=cutval.rf) 
 		#make the confusion matrix
 		v.y[[i]] <- table(observed = evSet[[i]][,"pres"],
 			predicted = v.rf.pred.cut)
@@ -435,7 +443,6 @@ if(length(group$vals)>2){
 		t.importance[[i]] <- data.frame("meanDecreaseAcc" = imp,
 									"timesUsed" = used )
 	} #close loop
-
 	#housecleaning
 	rm(trSet, evSet)
 

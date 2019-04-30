@@ -62,6 +62,13 @@ EnvVars <- dbGetQuery(dbEV, SQLQuery)
 names(EnvVars) <- tolower(names(EnvVars))
 if (!all(gridlistSub %in% names(EnvVars))) stop("Some variables in `lkpEnvVarsAqua` are not in the background variable database.")
 EnvVars <- EnvVars[c("comid",gridlistSub)]
+
+# remove vars that have any NAs on presences
+narm <- names(EnvVars)[is.na(colSums(EnvVars,na.rm = F))]
+if (length(narm) > 0) {
+  message("Dropping the following variables due to NA values at presences:`", paste(narm, collapse = "`,`"), "`.")
+  EnvVars <- EnvVars[!names(EnvVars) %in% narm]
+}
 dbDisconnect(dbEV)
 
 # merge two data frames by COMID

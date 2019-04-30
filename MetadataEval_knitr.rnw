@@ -440,8 +440,8 @@ clrs <- brewer.pal('Blues',n=nclr)
 
 # figure out size of study area, expand if less than 889km across,
 #  which is 1;5,000,000 when figure is 7 inches wide (which it is here)
-bbox <- bb(referenceBoundaries) # use state outline as fixed boundary
-# bbox <- bb(studyAreaExtent)
+# bbox <- bb(referenceBoundaries) # use state outline as fixed boundary
+bbox <- bb(studyAreaExtent)
 # studyAreaWidth <- bbox$xmax - bbox$xmin
 # studyAreaHeight <- bbox$ymax - bbox$ymin
 # if(studyAreaWidth < 889000){
@@ -475,15 +475,22 @@ tmap_mode("plot")
 
 ## this is CartoDB.Positron
 # mtype <- 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-basetiles <- read_osm(bbox, type = 'esri-topo')#, zoom = 8, type = 'esri-topo') #, ext = 1.01) #type = mtype, ext = 1.1) 
+basetiles <- read_osm(bbox, type = 'esri-topo') #,type = mtype, ext = 1.1) 
 # try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1))
 
+# rasterize prediction
+ras <- raster(ext = extent(basetiles), crs = st_crs(basetiles)$proj4string, res = c(1000,1000))
+suppressMessages(ras <- nhSDM::nh_rasterize(results_shape, ras, results_shape$prbblty))
+
 # plot it
-qtm(basetiles) + 
-  tm_shape(results_shape, name="modeled suitability") + # stream linework
-  tm_lines(col="prbblty", palette=clrs, labels=c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability"), 
-             style = "equal",
-             title.col = "modeled suitability") +     
+qtm(basetiles) +   
+  # tm_shape(results_shape, name="modeled suitability") + # stream linework
+  # tm_lines(col="prbblty", palette=clrs, labels=c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability"),
+  #          style = "equal",
+  #           title.col = "modeled suitability") +
+  tm_shape(ras) +
+    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9, style = "equal",
+                labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability")) +
   tm_shape(area.wb.pred) + # waterbodies and NHD polys
     tm_fill(col="pred", palette=clrs, legend.show = FALSE) + 
   tm_shape(referenceBoundaries) +
@@ -614,7 +621,7 @@ Appendix 2. Model details for reproducibility.
     \setlength{\parsep}{0pt}
   \item{All R Scripts are available at \href{https://github.com/VANatHeritage/Virginia_SDM}{github}}
   \item{The repository branch:head used for this run was: \texttt{\Sexpr{paste0(git2r::repository_head()$name,":",substr(modelrun_meta_data$repo_head,1,8))}}}
-  \item{Validation metrics requiring a threshold use MTP (minimum training presence)}
+  \item{Validation metrics requiring a threshold use maximum of sensitivity plus specificity (MaxSSS)}
   \item{R version: \Sexpr{modelrun_meta_data$r_version}}
   \item{Random seed for full randomForest model: \Sexpr{modelrun_meta_data$seed}}
   \item{randomForest mtry: \Sexpr{rf.full$mtry}}

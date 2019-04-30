@@ -20,6 +20,7 @@ library(tables)
 library(tmap)
 library(tmaptools)
 library(OpenStreetMap)
+library(raster)
 
 ### find and load model data ----
 ## three lines need your attention. The one directly below (loc_scripts),
