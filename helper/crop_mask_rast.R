@@ -26,7 +26,7 @@ rangeDissolved <- st_union(hucRange)
 rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(10, km^2))
 # crop to CONUS boundary
 conus <- st_read(nm_refBoundaries)
-rangeClipped <- st_intersection(st_transform(rangeDissHolesFilled, st_crs(conus)), conus)
+rangeClipped <- st_sf(geometry = st_intersection(st_transform(rangeDissHolesFilled, st_crs(conus)), conus))
 # write out a dissolved version of hucRange for 'study area'
 st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")), delete_layer = T)
 
@@ -48,7 +48,7 @@ dir.create(temp, showWarnings = F)
 rtemp <- raster(fullL[[1]])
 
 # clipping/masking boundary
-rng <- st_transform(rangeClipped, crs = as.character(rtemp@crs))
+rng <- st_buffer(st_transform(rangeClipped, crs = as.character(rtemp@crs)), res(rtemp)[1]) # 1-cell buffer to fix any self-intersections
 rm(rtemp)
 rng <- st_sf(geometry = st_cast(st_union(rng), "POLYGON"))
 rng$id <- 1:length(rng$geometry)
