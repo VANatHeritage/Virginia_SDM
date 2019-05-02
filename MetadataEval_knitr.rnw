@@ -434,9 +434,6 @@ if(nrow(sdm.customComments.subset) > 0){
 #plotvar <- results_shape$prbblty ## not in Tim's version
 nclr <- 5
 clrs <- brewer.pal('Blues',n=nclr)
-#class <- classIntervals(plotvar, nclr, style="equal", dataPrecision = 2) ## not in Tim's version
-#colcode <- findColours(class, clrs) ## not in Tim's version
-#results_shape$colcode <- colcode ## not in Tim's version
 
 # figure out size of study area, expand if less than 889km across,
 #  which is 1;5,000,000 when figure is 7 inches wide (which it is here)
@@ -463,7 +460,7 @@ if (!is.null(nm_aquaArea)) {
   area.wb.pred <- merge(aquaPolys, aqua.pred, by = "comid")
 }
 
-#tmap_options(max.raster = c("plot" = 300000, "view" = 100000)) ## this may not be important for vectors
+# tmap_options(max.raster = c("plot" = 300000, "view" = 100000)) ## this may not be important for vectors
 tmap_mode("plot")
 ###get the basemap
 # for basemap options see http://leaflet-extras.github.io/leaflet-providers/preview/
@@ -472,17 +469,15 @@ tmap_mode("plot")
 #basetiles <- read_osm(studyAreaExtent, type = "stamen-toner", ext = 1.1)
 ## this is Esri.WorldGrayCanvas
 # mtype <- 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}.png?'
-
-## this is CartoDB.Positron
-# mtype <- 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+mtype <- 'esri-topo'
 basetiles <- NULL
-try(basetiles <- read_osm(bbox, type = 'esri-topo', ext = 1.1), silent = T) #,type = mtype, ext = 1.1) 
+try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1), silent = T)
 if (is.null(basetiles)) basetiles <- read_osm(bbox, ext = 1.1)
-# try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1))
 
 # rasterize prediction
 ras <- raster(ext = extent(basetiles), crs = st_crs(basetiles)$proj4string, res = c(1000,1000))
 suppressMessages(ras <- nhSDM::nh_rasterize(results_shape, ras, results_shape$prbblty))
+brks <- quantile(ras, probs = c(0,.5,.75,.85,.95,1)) # manual breaks to apply for both reaches and aqua.wb.pred
 
 # plot it
 qtm(basetiles) +   
@@ -491,10 +486,10 @@ qtm(basetiles) +
   #          style = "equal",
   #           title.col = "modeled suitability") +
   tm_shape(ras) +
-    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9, style = "equal",
+    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9, style = "fixed", breaks = brks,
                 labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability")) +
   tm_shape(area.wb.pred) + # waterbodies and NHD polys
-    tm_fill(col="pred", palette=clrs, legend.show = FALSE) + 
+    tm_fill(col="pred", palette=clrs, legend.show = FALSE, style = "fixed", breaks = brks) + 
   tm_shape(referenceBoundaries) +
     tm_borders(col = "grey", lwd = 1) + 
   tm_shape(studyAreaExtent) + 
@@ -506,7 +501,7 @@ qtm(basetiles) +
 @
 \includegraphics{figure/mapFig-1.png}    
 \end{center}
-Figure 4. A generalized view of the model predictions throughout the modeled area. State boundaries are depicted as a thin gray line. The modeled area is outlined in red. Basemap: CartoDB.Positron (\copyright  \href{https://www.openstreetmap.org/copyright}{OpenStreetMap}, contributors: \copyright  \href{https://carto.com/attributions}{CARTO}).
+Figure 4. A generalized view of the model predictions throughout the modeled area. State boundaries are depicted as a thin gray line. The modeled area is outlined in red. Basemap: Esri World Topographic Map (\copyright \Sexpr{format(Sys.Date(), "%Y")} \href{https://www.arcgis.com/home/item.html?id=30e5fe3149c34df1ba922e6f5bbf808f}{Esri}).
 
 
 \normalsize
