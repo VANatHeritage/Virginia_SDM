@@ -454,7 +454,7 @@ tmap_mode("plot")
 mtype <- 'esri-topo'
 basetiles <- NULL
 try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1), silent = T)
-if (is.null(basetiles)) basetiles <- read_osm(bbox, ext = 1.1)
+if (is.null(basetiles)) basetiles <- referenceBoundaries
 
 brks <- quantile(ras, probs = c(0,.5,.75,.85,.95,1)) # manual breaks to apply for both reaches and aqua.wb.pred
 
