@@ -142,53 +142,63 @@ df.full <- rbind(df.in, df.abs)
 # reset these factors
 df.full$stratum <- factor(df.full$stratum)
 df.full$group_id <- factor(df.full$group_id)
+if (length(levels(df.full$group_id))-1 < 5 & length(levels(df.full$group_id)) < length(levels(df.full$stratum))) {
+  message("Performing cross validation by-polygon...")
+  cv.by <- "stratum" 
+} else {
+  cv.by <- "group_id"
+}
 df.full$pres <- factor(df.full$pres)
 df.full$ra <- factor(tolower(as.character(df.full$ra)))
 df.full$species_cd <- factor(df.full$species_cd)
 
 # make samp size groupings ----
-EObyRA <- unique(df.full[,c("group_id","ra")])
+EObyRA <- unique(df.full[,c(cv.by,"ra")])
 EObyRA$sampSize[EObyRA$ra == "very high"] <- 5
 EObyRA$sampSize[EObyRA$ra == "high"] <- 4
 EObyRA$sampSize[EObyRA$ra == "medium"] <- 3
 EObyRA$sampSize[EObyRA$ra == "low"] <- 2
 EObyRA$sampSize[EObyRA$ra == "very low"] <- 1
-# set the background pts to the sum of the EO samples
-# EObyRA$sampSize[EObyRA$group_id == "pseu-a"] <- sum(EObyRA[!EObyRA$group_id == "pseu-a", "sampSize"])
 
 # there appear to be cases where more than one 
 # RA is assigned per EO. Handle it here by 
 # taking max value
-EObySS <- aggregate(EObyRA$sampSize, by=list(EObyRA$group_id), max)
+EObySS <- aggregate(EObyRA$sampSize, by=list(EObyRA[,cv.by]), max)
 # set the background pts to the sum of the EO samples
-names(EObySS) <- c("group_id","sampSize")
-EObySS$sampSize[EObySS$group_id == "pseu-a"] <- sum(EObySS[!EObySS$group_id == "pseu-a", "sampSize"])
+names(EObySS) <- c(cv.by,"sampSize")
+# EObySS$sampSize[EObySS[,cv.by] == "pseu-a"] <- sum(EObySS[!EObySS[,cv.by] == "pseu-a", "sampSize"])
 
 sampSizeVec <- EObySS$sampSize
-names(sampSizeVec) <- as.character(EObySS$group_id)
+names(sampSizeVec) <- as.character(EObySS[,cv.by])
 # reset sample sizes to number of points, when it is smaller than desired sample size
 # This is only relevant when complete.cases may have removed some points from an already-small set of points
-totPts <- table(df.full$group_id)
-for (i in names(sampSizeVec)) if (sampSizeVec[i] > totPts[i]) sampSizeVec[i] <- totPts[i]
+totPts <- table(df.full[,cv.by])
+for (i in names(sampSizeVec)) if (sampSizeVec[i] >= totPts[i]) sampSizeVec[i] <- max(totPts[i] - 1, 1) 
+  # make sure sample size at least (1) less than total points, avoiding case where no data is left for internal RF OOB
+sampSizeVec["pseu-a"] <- sum(sampSizeVec[!names(sampSizeVec) %in% "pseu-a"])
 
 ##
 # tune mtry ----
 # run through mtry twice
+mtry <- NULL
+while (is.null(mtry)) {
+try({
 x <- tuneRF(df.full[,indVarCols],
              y=df.full[,depVarCol],
              ntreeTry = 300, stepFactor = 2, mtryStart = 6,
-            strata = df.full$group_id, sampsize = sampSizeVec, replace = TRUE)
+            strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
 
 newTry <- x[x[,2] == min(x[,2]),1]
 
 y <- tuneRF(df.full[,indVarCols],
             y=df.full[,depVarCol],
             ntreeTry = 300, stepFactor = 1.5, mtryStart = max(newTry),
-            strata = df.full$group_id, sampsize = sampSizeVec, replace = TRUE)
+            strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
 
 mtry <- max(y[y[,2] == min(y[,2]),1])
 rm(x,y)
-
+})
+}
 ##
 # Remove the least important env vars ----
 ##
@@ -199,7 +209,7 @@ rf.find.envars <- randomForest(df.full[,indVarCols],
                         importance=TRUE,
                         ntree=ntrees,
                         mtry=mtry,
-                        strata = df.full$group_id, sampsize = sampSizeVec, replace = TRUE)
+                        strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
 
 impvals <- importance(rf.find.envars, type = 1)
 OriginalNumberOfEnvars <- length(impvals)
@@ -265,9 +275,9 @@ group <- vector("list")
 # }
 ## TODO: bring back by-polygon validation. SampSize needs to be able to handle this to make it possible
 # only validate by EO at this time:
-group$colNm <- "group_id"
-group$JackknType <- "spatial grouping"
-group$vals <- unique(df.in2$group_id)
+group$colNm <- cv.by
+group$JackknType <- ifelse(cv.by == "stratum", "polygon", "polygon group")
+group$vals <- unique(df.in2[,cv.by])
 
 #reduce the number of trees if group$vals has more than 30 entries #commented out to be parallel with aquatic
 #this is for validation
@@ -331,7 +341,7 @@ if(length(group$vals)>1){
 		  trSetBG <-  df.abs2[-TrBGsamps,]  #get everything that isn't in TrBGsamps
 		   # join em, clean up
 		  trSet <- rbind(trSet, trSetBG)
-		  trSet$group_id <- factor(trSet$group_id)
+		  trSet[,cv.by] <- factor(trSet[,cv.by])
 		  evSet[[i]] <- rbind(evSet[[i]], evSetBG)
 		  
 		  ssVec <- sampSizeVec[!names(sampSizeVec) == group$vals[[i]]]
@@ -427,14 +437,14 @@ if(length(group$vals)>1){
 # 	  sss <- data.frame(cutSens = unlist(sens@x.values),sens = unlist(sens@y.values),
 # 	                            cutSpec = unlist(spec@x.values), spec = unlist(spec@y.values))
 # 	  sss$sss <- with(sss, sens + spec)
-# 	  maxSSS <- sss[which.max(sss$sss),"cutSens"]
+# 	  maxSSS <- min(sss[which.max(sss$sss),"cutSens"], 0.9999)
 #     cutval.rf <- c(1-maxSSS, maxSSS)
 # 	  names(cutval.rf) <- c("0","1")
 	  
 	  # get MTP: minimum training presence (minimum votes recieved [probability]
 	  # for any training point)
 	  allVotesPrespts <- trRes[[i]]$votes[,"1"][trRes[[i]]$y == 1]
-	  MTP <- min(allVotesPrespts)
+	  MTP <- min(min(allVotesPrespts), 0.9999)
 	  cutval.rf <- c(1-MTP, MTP)
 	  names(cutval.rf) <- c("0","1")
 	  
@@ -532,7 +542,7 @@ rf.full <- randomForest(df.full[,indVarCols],
                         importance=TRUE,
                         ntree=ntrees,
                         mtry=mtry,
-                        strata = df.full[,"group_id"],
+                        strata = df.full[,cv.by],
                         sampsize = sampSizeVec, replace = TRUE,
                         norm.votes = TRUE)
 ####
