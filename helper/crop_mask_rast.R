@@ -4,7 +4,6 @@ library(snow)
 library(smoothr)
 
 # needs raster list (fullL), loc_envVars, model_species
-
 ########################################
 # get range info from the DB (as a list of HUCs)
 db <- dbConnect(SQLite(),dbname=nm_db_file)
@@ -21,12 +20,14 @@ qry <- paste("SELECT * from HUC10 where HUC_10 IN ('", paste(hucList, collapse =
 hucRange <- st_zm(st_read(nm_range, query = qry))
 
 # dissolve it
-rangeDissolved <- st_union(hucRange)
+# note: There are several st_buffers in this script with 0 distance, which help fix self-intersection issues
+suppressWarnings(rangeDissolved <- st_union(st_buffer(hucRange,0)))
+
 # fill holes/slivers
 rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(10, km^2))
 # crop to CONUS boundary
 conus <- st_read(nm_refBoundaries)
-rangeClipped <- st_intersection(st_transform(rangeDissHolesFilled, st_crs(conus)), conus)
+rangeClipped <- st_sf(geometry = st_intersection(st_buffer(st_transform(rangeDissHolesFilled, st_crs(conus)),0), conus))
 # write out a dissolved version of hucRange for 'study area'
 st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")), delete_layer = T)
 
@@ -48,7 +49,7 @@ dir.create(temp, showWarnings = F)
 rtemp <- raster(fullL[[1]])
 
 # clipping/masking boundary
-rng <- st_transform(rangeClipped, crs = as.character(rtemp@crs))
+rng <- st_buffer(st_transform(rangeClipped, crs = as.character(rtemp@crs)), res(rtemp)[1]) # 1-cell buffer to fix any self-intersections
 rm(rtemp)
 rng <- st_sf(geometry = st_cast(st_union(rng), "POLYGON"))
 rng$id <- 1:length(rng$geometry)

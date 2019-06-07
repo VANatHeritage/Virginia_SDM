@@ -115,7 +115,7 @@ sql <- paste0("update lkpSpeciesRubric set spdata_dataqual = '", dqUpdate$dqAttr
 dbExecute(db, statement = sql)
 ## performance
 prfmcMatrix <- data.frame("pAttribute" = c("C","A"),
-                          "pComments" = c("Model TSS < 0.6. Mapped model output is evaluated for ecological plausibility by expert review.",
+                          "pComments" = c("Model TSS < 0.6, or not measurable due to low sample size. Mapped model output is evaluated for ecological plausibility by expert review.",
                                           "Model TSS >= 0.6. Mapped model output is evaluated for ecological plausibility by expert review."))
 if (length(group$vals)>2) prfmAtt <- ifelse(tss.summ$mean<=0.6, "C", "A") else prfmAtt <- "C"
 prfmUpdate <- prfmcMatrix[match(prfmAtt, prfmcMatrix$pAttribute),]

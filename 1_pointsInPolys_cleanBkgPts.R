@@ -199,7 +199,8 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
   message("Calculating HUC10 range...")
   # auto-range (intersecting huc10s + huc10s that they border)
   huc10 <- st_read(paste0(loc_scripts, "/_data/other_spatial/feature/HUC10.shp"))
-  sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
+  # sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
+  sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_convex_hull(st_combine(shp_expl)), st_crs(huc10))), any)),]
   hucList <- sti$HUC_10
   if (!is.null(huc_level)) {
     # dissolves to desired huc_level
@@ -214,7 +215,7 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
   rm(sti, sti2, huc10)
   hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = fn_args$baseName, version_info = as.character(Sys.Date()), 
                       comments = paste0("auto-generated using ", 
-                                        ifelse(is.null(huc_level), "intersecting HUC-10s + 1-HUC-10 buffer", paste0("a huc_level of ", huc_level))))
+                                        ifelse(is.null(huc_level), "intersecting HUC-10s of convex hull + 1-HUC-10 buffer", paste0("intersecting HUC-10s of convex hull and a huc_level of ", huc_level))))
   dbWriteTable(db, "lkpRange", hucdf, append = T)
 #}
 dbDisconnect(db)

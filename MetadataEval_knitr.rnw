@@ -95,16 +95,16 @@ This SDM incorporates the number of known and background locations indicated in 
 \smallskip     %dummy first line to align with next minipage
 
 
-Table 1. Input statistics. Presence points are points placed in polygon-based location information or point-based observations. Groups describe groupings of points based on polygon data or spatial grouping of observations. Background points are placed throughout model area excluding known species locations.
+Table 1. Input statistics. Presence points are points placed in polygon-based location information or point-based observations. Groups describe groupings of points based on polygon data or spatial grouping of observations. Background points are placed throughout model area excluding known species locations. In cases of fewer than 5 groups, cross-validation is performed by-polygon.
 \smallskip
 \begin{center}
 <<tableOne, results="asis", echo = FALSE>>=
-	summ.table <- data.frame(Name=c("Presence points","Groups","Background points"),
+	summ.table <- data.frame(Name=c("Presence points", "Polygons(Groups)","Background points"),
                          Number=c(nrow(subset(df.full, pres == 1)),
-                         numEOs,
+                         paste0(length(levels(df.full$stratum))-1,"(",length(levels(df.full$group_id))-1,")"),
                          nrow(subset(df.full, pres == 0))
                          ))
-  print(xtable(summ.table),
+  print(xtable(summ.table, digits = 0),
              floating = FALSE, include.rownames=FALSE)
 @
 \end{center}
@@ -453,7 +453,7 @@ tmap_mode("plot")
 mtype <- 'esri-topo'
 basetiles <- NULL
 try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1), silent = T)
-if (is.null(basetiles)) basetiles <- read_osm(bbox, ext = 1.1)
+if (is.null(basetiles)) basetiles <- referenceBoundaries
 
 brks <- quantile(ras, probs = c(0,.5,.75,.85,.95,1)) # manual breaks to apply for both reaches and aqua.wb.pred
 
