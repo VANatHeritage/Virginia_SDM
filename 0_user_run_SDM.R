@@ -9,7 +9,7 @@ rm(list=ls())
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
 list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-model_species <- "megawill"
+model_species <- "ellilanc"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -20,29 +20,29 @@ nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
 # locations file (presence reaches). Provide full path.
 nm_presFile <- here("_data", "occurrence", paste0(model_species, ".shp"))
 # map reference boundaries
-#nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
-nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp") # background grey reference lines in map
+nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
+# nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp") # background grey reference lines in map
 
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_reaches_VA") # use VA_rangewide for ellilanc
+nm_bkg <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_reaches_VA_rangewide") # use VA_rangewide for ellilanc
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_huc12 <- c(here("_data","env_vars","tabular", "background.sqlite"), "range_huc12_VA") # use VA_rangewide for ellilanc
+nm_huc12 <- c(here("_data","env_vars","tabular", "background.sqlite"), "range_huc12_VA_rangewide") # use VA_rangewide for ellilanc
 # name of aquatic areas shapefile (for mapping; optional) [Aquatic-only variable]
 nm_aquaArea <- c(here("_data", "env_vars","tabular", "background.sqlite"), "nhdArea")
 
 # project overview - this appears in the first paragraph of the metadata
 project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
 # model comment in database
-model_comments = "database comment from `model_comments`"
+model_comments = "New run after update removing the Shenandoah river occurrence. Trying top 50% envvars percentile."
 # comment printed in PDF metadata
-metaData_comments = "This is a PDF comment from `metaData_comments`"
+metaData_comments = ""
 # your name
 modeller = "David Bucklin"
 # project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
-project_blurb <- "Project Blurb from `project_blurb`."
+project_blurb <- ""
 
 # numeric HUC level to sub-set project area. NULL will auto-calculate the level where all presences are in a unique watershed at that level
-huc_level <- NULL
+huc_level <- 4
 # list non-standard variables to add to model run. Need to be already attributed in background points
 add_vars = NULL
 # list standard variables to remove from model run
@@ -159,7 +159,7 @@ rm(list=ls())
 # so you need to have executed run_SDM in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "megawill"
+model_species <- "ellilanc"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

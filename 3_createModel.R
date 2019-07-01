@@ -195,7 +195,7 @@ for(grp in unique(corrdEVs$correlatedVarGroupings)){
 rm(vars, imp.sub, varsToDrop)
 
 # set the percentile, here choosing above 25% percentile
-envarPctile <- 0.25
+envarPctile <- 0.50
 y <- quantile(impvals, probs = envarPctile)
 impEnvVars <- impvals[impvals > y,]
 subsetNumberofEnvars <- length(impEnvVars)

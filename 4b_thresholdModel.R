@@ -47,6 +47,13 @@ capturedEOs <- length(unique(allVotesPresPts$group_id))
 capturedPts <- nrow(MTPGPts)
 cutList$MTPG <- list("value"=MTPG, "code"="MTPG", "capturedEOs"=capturedEOs, "capturedPts"=capturedPts)
 
+# get TenTPG
+TenTPG <- quantile(aggregate(allVotesPresPts$X1, by=list(allVotesPresPts$stratum), FUN = max)$x, probs = 0.1)
+TenTPGPts <- allVotesPresPts[allVotesPresPts$X1 >= TenTPG,]
+capturedEOs <- length(unique(TenTPGPts$group_id))
+capturedPts <- nrow(TenTPGPts)
+cutList$TenTPG <- list("value"=TenTPG, "code"="TenTPG", "capturedEOs"=capturedEOs, "capturedPts"=capturedPts)
+
 # F-measure cutoff skewed towards capturing more presence points.
 # extract the precision-recall F-measure from training data
 # set alpha very low to tip in favor of 'presence' data over 'absence' data
@@ -122,12 +129,20 @@ cutList$eqss <- list("value" = eqss, "code" = "eqSS",
 # load the prediction vector, for calculating MRV
 results_shape <- st_read(paste0("model_predictions/", modelrun_meta_data$model_run_name, "_results.shp"), quiet = T)
 
+# first join pres, stratum to results file
+pres.comid <- df.full[c("comid", "stratum", "pres")]
+results_shape <- merge(results_shape, pres.comid, by = "comid", all.x = T)
+results_shape <- results_shape[!duplicated(results_shape),]
+
 # MRV (on full model predictions)
-###pres.comid <- df.full$comid[df.full$pres==1]
-###mrv <- min(results_shape$prbblty[results_shape$comid %in% pres.comid], na.rm = T)
-##cutList$MRV <- list("value" = mrv, "code" = "MRV", "capturedPts" = length(pres.comid))
+results_pres <- results_shape[!is.na(results_shape$pres) & results_shape$pres == 1,]
+mrv <- min(results_pres$prbblty, na.rm = T)
+cutList$MRV <- list("value" = mrv, "code" = "MRV", "capturedEOs"=NA, "capturedPts"=NA)
 
-
+# TenRV (on full model predictions)
+TenRV <- quantile(aggregate(results_pres$prbblty, by=list(results_pres$stratum), FUN = max)$x, probs = 0.1)
+cutList$TenRV <- list("value" = TenRV, "code" = "TenRV", "capturedEOs"=NA, "capturedPts"=NA)
+rm(results_pres)
 
 # number of thresholds to write to the db
 numThresh <- length(cutList)
