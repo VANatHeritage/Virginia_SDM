@@ -63,11 +63,16 @@ for (i in 1:length(stackOrder)) {
 names(fullL) <- stackOrder
 rm(rs)
 
-source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
-
-envStack <- stack(newL)
-
-#envStack <- stack(fullL) # if not using helper/crop_mask_rast.R
+if (huc_level !=0) {
+  source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
+  envStack <- stack(newL)
+} else {
+  # don't clip rasters, use full extent
+  st_write(st_read(nm_refBoundaries, quiet = T), 
+           here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")), 
+           delete_layer = T, quiet = T)
+  envStack <- stack(fullL) # if not using helper/crop_mask_rast.R
+}
 rm(fullL)
 
 # run prediction ----

@@ -8,7 +8,7 @@ rm(list=ls())
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
 list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-model_species <- "abiefras"
+model_species <- "bombaffi"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -19,9 +19,9 @@ nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
 # locations file (presence reaches). Provide full path; File is copied to modeling folder and timestamped.
 nm_presFile <- here("_data", "occurrence", paste0(model_species, ".shp"))
 # env vars location [Terrestrial-only variable]
-loc_envVars = here("_data","env_vars","raster","ras")
+loc_envVars = here("_data","env_vars","raster")
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
-nm_bkgPts <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_VA")
+nm_bkgPts <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_VA_new") # "VA_new" uses latest (2016) NLCD data
 # HUC spatial data set (shapefile) that is subsetted and used to define modeling area//range
 nm_HUC_file <- here("_data","other_spatial","feature","HUC10.shp")
 # map reference boundaries
@@ -31,23 +31,23 @@ nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131
 # project overview - this appears in the first paragraph of the metadata
 project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
 # model comment in database
-model_comments = "database comment from `model_comments`"
+model_comments = "Testing with new NLCD 2016 env vars."
 # comment printed in PDF metadata
-metaData_comments = "This is a PDF comment from `metaData_comments`"
+metaData_comments = ""
 # your name
 modeller = "David Bucklin"
 # project_blurb = "Models developed for the MoBI project are intended to inform creation of a national map of biodiversity value, and we recommend additional refinement and review before these data are used for more targeted, species-specific decision making. In particular, many MoBI models would benefit from greater consideration of species data and environmental predictor inputs, a more thorough review by species experts, and iteration to address comments received."
-project_blurb <- "Project Blurb from `project_blurb`."
+project_blurb <- ""
 
 # list non-standard variables to add to model run. Need to be already attributed in background points
 add_vars = NULL
 # list standard variables to exclude from model run
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
-prompt = T
+prompt = F
 
 # dissolve HUC level for defining ranges, based on HUC-10 interesections, so can be set to 2,4,6,8,10. Set NULL for automatic: intersecting HUC-10s + 1 HUC-10 buffer.
-huc_level = 8
+huc_level = 0
 
 # set wd and load function
 setwd(loc_scripts)
@@ -105,7 +105,7 @@ library(here)
 rm(list=ls())
 
 # set project folder and species code for this run
-model_species <- "abiefras"
+model_species <- "bombaffi"
 loc_model <- here("_data", "species")
 
 # set wd and load function
@@ -145,6 +145,13 @@ run_SDM(
   project_blurb = "Updated project blurb..."
 )
 
+run_SDM(
+  begin_step = "4",
+  model_species = model_species,
+  loc_model = loc_model
+)
+
+
 ########## 
 ##########
 ##########
@@ -157,7 +164,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "abiefras"
+model_species <- "bombaffi"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

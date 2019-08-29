@@ -137,31 +137,41 @@ shp_expl$finalSampNum <- ifelse(shp_expl$PolySampNum < shp_expl$minSamps,
                                 shp_expl$minSamps, 
                                 shp_expl$PolySampNum)
 
-ranPts <- st_sample(shp_expl, size = shp_expl$finalSampNum * 2)
-ranPts.sf <- st_sf(ranPts)
-names(ranPts.sf) <- "geometry"
-st_geometry(ranPts.sf) <- "geometry"
+# nhSDM sampling
+system.time({
+rtmp <- raster::raster(list.files(loc_envVars, pattern = ".tif$", full.names = T)[1])
+ranPts.joined <- nhSDM::nh_sample(shp_expl, rtmp, num.samps = shp_expl$finalSampNum, force.min = T)
+rm(rtmp)
+})
 
-ranPts.joined <- st_join(ranPts.sf, shp_expl)
-
-# check for polys that didn't get any points
-polysWithNoPoints <- shp_expl[!shp_expl$expl_id %in% ranPts.joined$expl_id,]
-if(nrow(polysWithNoPoints) > 0){
-  stop("One or more polygons didn't get any points placed in them.")
-}
-
-# get actual finalSampNum
-ranPts.joined2 <- ranPts.joined[0,]
-
-#### this is slow! ####
-for (ex in 1:length(shp_expl$geometry)) {
-  s1 <- shp_expl[ex,]
-  samps <- row.names(ranPts.joined[ranPts.joined$expl_id==s1$expl_id,])
-  if (length(samps) > s1$finalSampNum) samps <- sample(samps, size = s1$finalSampNum) # samples to remove
-  ranPts.joined2 <- rbind(ranPts.joined2, ranPts.joined[samps,])
-}
-ranPts.joined <- ranPts.joined2
-rm(ex, s1, samps, ranPts.joined2)
+# standard sampling
+# system.time({
+# ranPts <- st_sample(shp_expl, size = shp_expl$finalSampNum * 2)
+# ranPts.sf <- st_sf(ranPts)
+# names(ranPts.sf) <- "geometry"
+# st_geometry(ranPts.sf) <- "geometry"
+# 
+# ranPts.joined <- st_join(ranPts.sf, shp_expl)
+# 
+# # check for polys that didn't get any points
+# polysWithNoPoints <- shp_expl[!shp_expl$expl_id %in% ranPts.joined$expl_id,]
+# if(nrow(polysWithNoPoints) > 0){
+#   stop("One or more polygons didn't get any points placed in them.")
+# }
+# 
+# # get actual finalSampNum
+# ranPts.joined2 <- ranPts.joined[0,]
+# 
+# #### this is slow! ####
+# for (ex in 1:length(shp_expl$geometry)) {
+#   s1 <- shp_expl[ex,]
+#   samps <- row.names(ranPts.joined[ranPts.joined$expl_id==s1$expl_id,])
+#   if (length(samps) > s1$finalSampNum) samps <- sample(samps, size = s1$finalSampNum) # samples to remove
+#   ranPts.joined2 <- rbind(ranPts.joined2, ranPts.joined[samps,])
+# }
+# ranPts.joined <- ranPts.joined2
+# rm(ex, s1, samps, ranPts.joined2)
+# })
 
 #check for cases where sample smaller than requested
 # how many points actually generated?
@@ -200,17 +210,22 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
   # auto-range (intersecting huc10s + huc10s that they border)
   huc10 <- st_read(paste0(loc_scripts, "/_data/other_spatial/feature/HUC10.shp"))
   # sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
-  sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_convex_hull(st_combine(shp_expl)), st_crs(huc10))), any)),]
-  hucList <- sti$HUC_10
-  if (!is.null(huc_level)) {
-    # dissolves to desired huc_level
-    huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
-    hucsub <- substr(hucList, 1, huc_level)
-    hucList <- huc10$HUC_10[huc10$huclev %in% hucsub]
+  if (!is.null(huc_level) && huc_level == 0) {
+    hucList <- huc10$HUC_10
+    message("huc_level = 0. Full range of HUC dataset being used.")
   } else {
-    # uses a one huc-10 buffer to define range
-    sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
-    hucList <- sti2$HUC_10
+    sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_convex_hull(st_combine(shp_expl)), st_crs(huc10))), any)),]
+    hucList <- sti$HUC_10
+    if (!is.null(huc_level)) {
+      # dissolves to desired huc_level
+      huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
+      hucsub <- substr(hucList, 1, huc_level)
+      hucList <- huc10$HUC_10[huc10$huclev %in% hucsub]
+    } else {
+      # uses a one huc-10 buffer to define range
+      sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
+      hucList <- sti2$HUC_10
+    }
   }
   rm(sti, sti2, huc10)
   hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = fn_args$baseName, version_info = as.character(Sys.Date()), 
@@ -234,12 +249,17 @@ rm(op)
 
 # find coincident points ----
 polybuff <- st_transform(shp_expl, st_crs(samps))
-polybuff <- st_buffer(polybuff, dist = 30)
+polybuff <- st_buffer(polybuff, dist = 250)
 
 coincidentPts <- unlist(st_contains(polybuff, samps, sparse = TRUE))
 
 # remove them (if any)
 if (length(coincidentPts) > 0) backgSubset <- samps[-coincidentPts,] else backgSubset <- samps
+if (nrow(backgSubset) > 10000) {
+  sz <- max(nrow(ranPts.joined), 10000)
+  backgSubset <- backgSubset[sample(1:nrow(backgSubset), sz, replace = F),]
+  rm(sz)
+}
 
 #write it up and do join in sqlite (faster than downloading entire att set)
 st_geometry(backgSubset) <- NULL
