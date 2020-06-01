@@ -114,38 +114,42 @@ shp_expl$PolySampNum <- round(400*((2/(1+exp(-(as.numeric(shp_expl$aream2)/900+1
 #make a new field for the design, providing a stratum name
 shp_expl <- cbind(shp_expl, "stratum" = paste("poly_",shp_expl$expl_id, sep=""))
 
+
 # sample must be equal or larger than the RA sample size in the random forest model
-shp_expl$ra <- factor(tolower(as.character(shp_expl$ra)))
+# shp_expl$ra <- factor(tolower(as.character(shp_expl$ra)))
 
 # QC step: are any records attributed with values other than these?
-raLevels <- c("very high", "high", "medium", "low", "very low")
-if("FALSE" %in% c(shp_expl$ra %in% raLevels)) {
+# raLevels <- c("very high", "high", "medium", "low", "very low")
+# if("FALSE" %in% c(shp_expl$ra %in% raLevels)) {
+#   stop("at least one record is not attributed with RA appropriately")
+# } else {
+#   print("RA levels attributed correctly")
+# }
+# 
+# #EObyRA <- unique(shp_expl[,c("expl_id", "group_id","ra")])
+# shp_expl$minSamps[shp_expl$ra == "very high"] <- 5
+# shp_expl$minSamps[shp_expl$ra == "high"] <- 4
+# shp_expl$minSamps[shp_expl$ra == "medium"] <- 3
+# shp_expl$minSamps[shp_expl$ra == "low"] <- 2
+# shp_expl$minSamps[shp_expl$ra == "very low"] <- 1
+
+if(!all(shp_expl$ra %in% 1:5)) {
   stop("at least one record is not attributed with RA appropriately")
 } else {
   print("RA levels attributed correctly")
+  shp_expl$minSamps <- as.numeric(shp_expl$ra)
 }
-
-
-#EObyRA <- unique(shp_expl[,c("expl_id", "group_id","ra")])
-shp_expl$minSamps[shp_expl$ra == "very high"] <- 5
-shp_expl$minSamps[shp_expl$ra == "high"] <- 4
-shp_expl$minSamps[shp_expl$ra == "medium"] <- 3
-shp_expl$minSamps[shp_expl$ra == "low"] <- 2
-shp_expl$minSamps[shp_expl$ra == "very low"] <- 1
 
 shp_expl$finalSampNum <- ifelse(shp_expl$PolySampNum < shp_expl$minSamps, 
                                 shp_expl$minSamps, 
                                 shp_expl$PolySampNum)
-
 # nhSDM sampling
-system.time({
 rtmp <- raster::raster(list.files(loc_envVars, pattern = ".tif$", full.names = T)[1])
 ranPts.joined <- nhSDM::nh_sample(shp_expl, rtmp, num.samps = shp_expl$finalSampNum, force.min = T)
 rm(rtmp)
-})
+
 
 # standard sampling
-# system.time({
 # ranPts <- st_sample(shp_expl, size = shp_expl$finalSampNum * 2)
 # ranPts.sf <- st_sf(ranPts)
 # names(ranPts.sf) <- "geometry"
@@ -171,7 +175,6 @@ rm(rtmp)
 # }
 # ranPts.joined <- ranPts.joined2
 # rm(ex, s1, samps, ranPts.joined2)
-# })
 
 #check for cases where sample smaller than requested
 # how many points actually generated?
@@ -270,7 +273,9 @@ dbWriteTable(db, tmpTableName, backgSubset, overwrite = TRUE)
 qry <- paste0("SELECT * from ", tmpTableName, " INNER JOIN ", nm_bkgPts[2], "_att on ",
               tmpTableName,".fid = ", nm_bkgPts[2], "_att.fid;")
 bgSubsAtt <- dbGetQuery(db, qry)
-bgSubsAtt$fid..4 <- NULL  # result of join; not sure if this is necesarry but should be harmless
+# bgSubsAtt$fid..4 <- NULL  # result of join; not sure if this is necesarry but should be harmless
+fldRm <- (1:length(names(bgSubsAtt)))[names(bgSubsAtt) == 'fid']
+if (length(fldRm) > 1) bgSubsAtt <- bgSubsAtt[,-max(fldRm)]
 
 # delete the table on the db
 dbRemoveTable(db, tmpTableName)

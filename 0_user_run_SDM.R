@@ -7,7 +7,7 @@ rm(list=ls())
 # Step 1: Setting for the model run
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
-list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
+# list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
 model_species <- "bombaffi"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
@@ -31,7 +31,7 @@ nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131
 # project overview - this appears in the first paragraph of the metadata
 project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
 # model comment in database
-model_comments = "Testing with new NLCD 2016 env vars."
+model_comments = ""
 # comment printed in PDF metadata
 metaData_comments = ""
 # your name
@@ -40,7 +40,7 @@ modeller = "David Bucklin"
 project_blurb <- ""
 
 # list non-standard variables to add to model run. Need to be already attributed in background points
-add_vars = NULL
+add_vars = NULL  # c("apiDistInt")
 # list standard variables to exclude from model run
 remove_vars = NULL
 # do you want to stop execution after each modeling step (script)?
@@ -146,7 +146,7 @@ run_SDM(
 )
 
 run_SDM(
-  begin_step = "4",
+  begin_step = "5",
   model_species = model_species,
   loc_model = loc_model
 )

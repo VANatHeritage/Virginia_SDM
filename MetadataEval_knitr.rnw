@@ -441,7 +441,7 @@ bbox <- bb(referenceBoundaries) # use state outline as fixed boundary
 #   bbox <- bb(bbox, height = 889000, relative = FALSE)
 #   }
 
-# tmap_options(max.raster = c("plot" = 300000, "view" = 100000)) ## this may not be important for vectors
+tmap_options(max.raster = c("plot" = 300000, "view" = 100000)) ## this may not be important for vectors
 tmap_mode("plot")
 ###get the basemap
 # for basemap options see http://leaflet-extras.github.io/leaflet-providers/preview/
@@ -452,21 +452,22 @@ tmap_mode("plot")
 ## this is Esri.WorldGrayCanvas
 # mtype <- 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}.png?'
 mtype <- 'esri-topo'
-basetiles <- NULL
-try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1), silent = T)
-if (is.null(basetiles)) basetiles <- referenceBoundaries
+# basetiles <- NULL
+# try(basetiles <- read_osm(bbox, type = mtype, ext = 1.1), silent = T)
+# if (is.null(basetiles)) basetiles <- referenceBoundaries
 
 brks <- quantile(ras, probs = c(0,.5,.75,.85,.95,1)) # manual breaks to apply for both reaches and aqua.wb.pred
 
 # plot it
-qtm(basetiles) + 
+#qtm(basetiles) + 
   tm_shape(ras) + 
-    tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9, style = "fixed", breaks = brks,
-            labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability")) +   tm_shape(referenceBoundaries) +
-    tm_borders(col = "grey", lwd = 1) + 
+  tm_raster(palette = clrs, title = "modeled suitability",alpha = 0.9, style = "fixed", breaks = brks,
+            labels = c("Low Habitat Suitability", rep(" ", nclr-2), "High Habitat Suitability"), interpolate = TRUE) + 
+  tm_shape(referenceBoundaries) +
+  tm_borders(col = "grey", lwd = 1) + 
   tm_shape(studyAreaExtent) + 
-    tm_borders(col = "red", lwd = 2) + 
-  tm_compass(north = 0, type = "arrow", position = c("left","bottom")) + 
+  tm_borders(col = "red", lwd = 2) + 
+  tm_compass(north = 0, type = "arrow", position = c("left","center")) + 
   tm_scale_bar() +
   tm_layout(legend.bg.color = "grey50", legend.bg.alpha = 0.3, frame.lwd = 2, outer.margins = c(0,0,0,0))
 

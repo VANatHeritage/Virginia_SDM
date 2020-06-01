@@ -69,8 +69,7 @@ df.abs <- df.abs[complete.cases(df.abs),]
 # add some fields to each
 df.in <- cbind(df.in, pres=1)
 df.abs$stratum <- "pseu-a"
-df.abs <- cbind(df.abs, GROUP_ID="pseu-a", 
-					pres=0, RA="high", SPECIES_CD="background")
+df.abs <- cbind(df.abs, GROUP_ID="pseu-a", pres=0, RA=4, SPECIES_CD="background")
 
 # lower case column names
 names(df.in) <- tolower(names(df.in))
@@ -146,19 +145,21 @@ if (length(levels(df.full$group_id))-1 < 5 & length(levels(df.full$group_id)) < 
   message("Performing cross validation by-polygon...")
   cv.by <- "stratum" 
 } else {
+  message("Performing cross validation by-polygon groups...")
   cv.by <- "group_id"
 }
 df.full$pres <- factor(df.full$pres)
-df.full$ra <- factor(tolower(as.character(df.full$ra)))
 df.full$species_cd <- factor(df.full$species_cd)
 
 # make samp size groupings ----
+# df.full$ra <- factor(tolower(as.character(df.full$ra)))
 EObyRA <- unique(df.full[,c(cv.by,"ra")])
-EObyRA$sampSize[EObyRA$ra == "very high"] <- 5
-EObyRA$sampSize[EObyRA$ra == "high"] <- 4
-EObyRA$sampSize[EObyRA$ra == "medium"] <- 3
-EObyRA$sampSize[EObyRA$ra == "low"] <- 2
-EObyRA$sampSize[EObyRA$ra == "very low"] <- 1
+EObyRA$sampSize <- EObyRA$ra
+# EObyRA$sampSize[EObyRA$ra == "very high"] <- 5
+# EObyRA$sampSize[EObyRA$ra == "high"] <- 4
+# EObyRA$sampSize[EObyRA$ra == "medium"] <- 3
+# EObyRA$sampSize[EObyRA$ra == "low"] <- 2
+# EObyRA$sampSize[EObyRA$ra == "very low"] <- 1
 
 # there appear to be cases where more than one 
 # RA is assigned per EO. Handle it here by 
