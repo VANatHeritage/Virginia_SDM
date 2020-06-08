@@ -63,7 +63,7 @@ for (i in 1:length(stackOrder)) {
 names(fullL) <- stackOrder
 rm(rs)
 
-if (huc_level !=0) {
+if (is.null(huc_level) || huc_level !=0) {
   source(paste0(loc_scripts, "/helper/crop_mask_rast.R"), local = TRUE)
   envStack <- stack(newL)
 } else {

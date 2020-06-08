@@ -8,7 +8,7 @@ rm(list=ls())
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
 # list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-model_species <- "bombaffi"
+model_species <- "isotmede"
 
 # loc_scripts is your repository. Make sure your git repository is set to correct branch
 loc_scripts <- here()
@@ -23,13 +23,13 @@ loc_envVars = here("_data","env_vars","raster")
 # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
 nm_bkgPts <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_VA_new") # "VA_new" uses latest (2016) NLCD data
 # HUC spatial data set (shapefile) that is subsetted and used to define modeling area//range
-nm_HUC_file <- here("_data","other_spatial","feature","HUC10.shp")
+nm_HUC_file <- here("_data","other_spatial","feature","WBDHU10_HR.shp")
 # map reference boundaries
 #nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
 nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp")
 
 # project overview - this appears in the first paragraph of the metadata
-project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2019)."
+project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2020)."
 # model comment in database
 model_comments = ""
 # comment printed in PDF metadata
@@ -47,7 +47,7 @@ remove_vars = NULL
 prompt = F
 
 # dissolve HUC level for defining ranges, based on HUC-10 interesections, so can be set to 2,4,6,8,10. Set NULL for automatic: intersecting HUC-10s + 1 HUC-10 buffer.
-huc_level = 0
+huc_level = NULL
 
 # set wd and load function
 setwd(loc_scripts)
@@ -105,7 +105,7 @@ library(here)
 rm(list=ls())
 
 # set project folder and species code for this run
-model_species <- "bombaffi"
+model_species <- "isotmede"
 loc_model <- here("_data", "species")
 
 # set wd and load function
@@ -128,9 +128,10 @@ run_SDM(
 
 # example pick-up a model run at step 3; uses most recent settings from previous run_SDM run
 run_SDM(
-  begin_step = "3",
+  begin_step = "4b",
   model_species = model_species,
   loc_model = loc_model,
+  nm_HUC_file = here("_data","other_spatial","feature","WBDHU10_HR.shp")
 )
 
 # example pick-up a model run at step 4c (metadata/comment update)
@@ -164,7 +165,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "bombaffi"
+model_species <- "isotmede"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

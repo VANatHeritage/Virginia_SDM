@@ -85,8 +85,8 @@ raslist.short <- unique(unlist(
 ))
 
 db <- dbConnect(SQLite(),dbname=nm_db_file)
-SQLQuery <- "select gridName, fileName from lkpEnvVars;"
-evs <- dbGetQuery(db, SQLQuery)
+SQLquery <- "select gridName, fileName from lkpEnvVars;"
+evs <- dbGetQuery(db, SQLquery)
 # restrict to rasters in folder
 shrtNms <- merge(data.frame(fileName = raslist.short), evs)
 

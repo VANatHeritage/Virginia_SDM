@@ -211,14 +211,14 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
 #if (length(hucList) == 0) {
   message("Calculating HUC10 range...")
   # auto-range (intersecting huc10s + huc10s that they border)
-  huc10 <- st_read(paste0(loc_scripts, "/_data/other_spatial/feature/HUC10.shp"))
+  huc10 <- st_read(nm_HUC_file)
   # sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
   if (!is.null(huc_level) && huc_level == 0) {
     hucList <- huc10$HUC_10
     message("huc_level = 0. Full range of HUC dataset being used.")
   } else {
     sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_convex_hull(st_combine(shp_expl)), st_crs(huc10))), any)),]
-    hucList <- sti$HUC_10
+    hucList <- sti$HUC10
     if (!is.null(huc_level)) {
       # dissolves to desired huc_level
       huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
@@ -227,13 +227,15 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
     } else {
       # uses a one huc-10 buffer to define range
       sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
-      hucList <- sti2$HUC_10
+      hucList <- sti2$HUC10
     }
   }
   rm(sti, sti2, huc10)
-  hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = "nhdplusV2_WBD", occurrence = fn_args$baseName, version_info = as.character(Sys.Date()), 
+  hucdf <- data.frame(EGT_ID = egt, huc10_id = hucList, origin = basename(nm_HUC_file), 
+                      occurrence = fn_args$baseName, version_info = as.character(Sys.Date()), 
                       comments = paste0("auto-generated using ", 
-                                        ifelse(is.null(huc_level), "intersecting HUC-10s of convex hull + 1-HUC-10 buffer", paste0("intersecting HUC-10s of convex hull and a huc_level of ", huc_level))))
+                                        ifelse(is.null(huc_level), "intersecting HUC-10s of convex hull + 1-HUC-10 buffer", 
+                                               paste0("intersecting HUC-10s of convex hull and a huc_level of ", huc_level))))
   dbWriteTable(db, "lkpRange", hucdf, append = T)
 #}
 dbDisconnect(db)

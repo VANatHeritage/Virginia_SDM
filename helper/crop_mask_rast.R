@@ -15,23 +15,26 @@ dbDisconnect(db)
 rm(db)
 
 # now get that info spatially
-nm_range <- nm_HUC_file
-qry <- paste("SELECT * from HUC10 where HUC_10 IN ('", paste(hucList, collapse = "', '"), "')", sep = "")
-hucRange <- st_zm(st_read(nm_range, query = qry))
+# nm_range <- nm_HUC_file
+qry <- paste("SELECT * from ", gsub('.shp$', '', basename(nm_HUC_file)),
+             " where HUC10 IN ('", paste(hucList, collapse = "', '"), "')", sep = "")
+hucRange <- st_zm(st_read(nm_HUC_file, query = qry))
 
-# dissolve it
-# note: There are several st_buffers in this script with 0 distance, which help fix self-intersection issues
-suppressWarnings(rangeDissolved <- st_union(st_buffer(hucRange,0)))
+# Dissolve, fill holes, and clip by full range
+suppressWarnings({
+  rangeDissolved <- st_union(hucRange)
 
-# fill holes/slivers
-rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(10, km^2))
-# crop to CONUS boundary
-conus <- st_read(nm_refBoundaries)
-rangeClipped <- st_sf(geometry = st_intersection(st_buffer(st_transform(rangeDissHolesFilled, st_crs(conus)),0), conus))
-# write out a dissolved version of hucRange for 'study area'
-st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")), delete_layer = T)
-
-rm(hucRange, rangeDissolved, rangeDissHolesFilled, conus)
+  # fill holes/slivers
+  rangeDissHolesFilled <- fill_holes(rangeDissolved, threshold = units::set_units(10, km^2))
+  # crop to CONUS boundary
+  conus <- st_read(nm_refBoundaries)
+  rangeClipped <- st_sf(model = baseName, geometry = st_geometry(st_intersection(st_buffer(st_transform(rangeDissHolesFilled, st_crs(conus)),0), conus)))
+  # write out a dissolved version of hucRange for 'study area'
+  st_write(rangeClipped, here("_data","species",model_species,"inputs","model_input",paste0(model_run_name, "_studyArea.gpkg")),
+           delete_layer = T)
+  
+  rm(rangeDissolved, rangeDissHolesFilled, conus) #  hucRange
+})
 
 ########################################
 # hucRange <- st_zm(st_read(nm_studyAreaExtent,quiet = T)) #DNB TESTING ONLY
