@@ -64,7 +64,7 @@ st_write(rng, dsn = temp, layer = "clipshp.shp", driver="ESRI Shapefile", delete
 ext <- st_bbox(rng)
 
 # cluster process rasters
-cl <- makeCluster(parallel::detectCores() - 1, type = "SOCK") 
+cl <- makeCluster(max(parallel::detectCores()-2, 1), type = "SOCK") 
 clusterExport(cl, list("temp", "ext", "clipshp"), envir = environment()) 
 clusterExport(cl, list("loc_envVars"), envir = environment()) 
 

@@ -82,7 +82,8 @@ fileNm <- paste0("model_predictions/", model_run_name,".tif")
 # use parallel processing if packages installed
 if (all(c("snow","parallel") %in% installed.packages())) {
   try({
-    beginCluster(type = "SOCK")
+    beginCluster(max(parallel::detectCores()-2, 1), type = "SOCK")
+    cat("Using multi-core processing...\n")
     outRas <- clusterR(envStack, predict, args = list(model=rf.full, type = "prob", index = 2), verbose = T)
     writeRaster(outRas, filename = fileNm, format = "GTiff", overwrite = TRUE)
   })

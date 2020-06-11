@@ -191,8 +191,8 @@ m <- cbind(
 # reclassify (multi-core try)
 if (all(c("snow","parallel") %in% installed.packages())) {
   try({
+    beginCluster(max(parallel::detectCores()-2, 1), type = "SOCK")
     cat("Using multi-core processing...\n")
-    beginCluster(type = "SOCK")
     rasrc <- clusterR(ras, reclassify, args = list(rcl = m))
   })
   try(endCluster())

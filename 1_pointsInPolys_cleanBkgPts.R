@@ -214,16 +214,17 @@ egt <- dbGetQuery(db, paste0("SELECT egt_id from lkpSpecies where sp_code = '", 
   huc10 <- st_read(nm_HUC_file)
   # sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(shp_expl, st_crs(huc10))), any)),]
   if (!is.null(huc_level) && huc_level == 0) {
-    hucList <- huc10$HUC_10
-    message("huc_level = 0. Full range of HUC dataset being used.")
+    sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_read(nm_refBoundaries), st_crs(huc10))), any)),]
+    hucList <- sti$HUC10
+    message("huc_level = 0. Full range of reference boundary dataset being used.")
   } else {
     sti <- huc10[unlist(lapply(st_intersects(huc10, st_transform(st_convex_hull(st_combine(shp_expl)), st_crs(huc10))), any)),]
     hucList <- sti$HUC10
     if (!is.null(huc_level)) {
       # dissolves to desired huc_level
-      huc10$huclev <- substr(huc10$HUC_10, 1, huc_level)
+      huc10$huclev <- substr(huc10$HUC10, 1, huc_level)
       hucsub <- substr(hucList, 1, huc_level)
-      hucList <- huc10$HUC_10[huc10$huclev %in% hucsub]
+      hucList <- huc10$HUC10[huc10$huclev %in% hucsub]
     } else {
       # uses a one huc-10 buffer to define range
       sti2 <- huc10[unlist(lapply(st_intersects(huc10, sti), any)),]
