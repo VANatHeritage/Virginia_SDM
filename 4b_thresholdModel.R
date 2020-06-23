@@ -167,6 +167,7 @@ options(useFancyQuotes = FALSE)
 
 dbExecute(db, paste0("DELETE FROM tblModelResultsCutoffs WHERE model_run_name = '",modelrun_meta_data$model_run_name, "';"))
 dbWriteTable(db, "tblModelResultsCutoffs", allThresh, append = TRUE)
+
 # clean up
 options(op)
 dbDisconnect(db)
@@ -207,7 +208,12 @@ rasrc <- as.factor(rasrc)
 levels(rasrc) <- merge(levels(rasrc), t3, by.x = "ID", by.y = "order", all.x = T)
 
 outfile <- paste("model_predictions/",model_run_name,"_all_thresholds.tif", sep = "")
+unlink(list.files(path = dirname(outfile), pattern=basename(outfile), full.names = T), force = T)
 writeRaster(rasrc, filename=outfile, format="GTiff", overwrite=TRUE, datatype = "INT2U")
+# write attribute table
+t4 <- data.frame(VALUE = as.integer(t3$order), 
+                 Class = as.character(paste("[",round(t3$cutValue, 3),"] ", t3$cutCodes, sep = "")))
+foreign::write.dbf(t4[order(t4$VALUE),], file = paste0(outfile, ".vat.dbf"))
 
 #clean up
 rm(m, rasrc)
