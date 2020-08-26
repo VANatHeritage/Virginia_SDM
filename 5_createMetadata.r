@@ -51,12 +51,17 @@ op <- options("useFancyQuotes")
 options(useFancyQuotes = FALSE)
 
 db <- dbConnect(SQLite(),dbname=nm_db_file)  
-SQLquery <- paste("Select lkpModelers.ProgramName, lkpModelers.FullOrganizationName, ",
-                  "lkpModelers.City, lkpModelers.State, lkpSpecies.sp_code ",
-                  "FROM lkpModelers ", 
-                  "INNER JOIN lkpSpecies ON lkpModelers.ModelerID=lkpSpecies.ModelerID ", 
-                  "WHERE lkpSpecies.sp_code='", model_species, "'; ", sep="")
-sdm.modeler <- dbGetQuery(db, statement = SQLquery)
+
+# Update: This information is not being used; commented out. 
+# SQLquery <- paste("Select lkpModelers.ProgramName, lkpModelers.FullOrganizationName, ",
+#                   "lkpModelers.City, lkpModelers.State, lkpSpecies.sp_code ",
+#                   "FROM lkpModelers ", 
+#                   # "INNER JOIN lkpSpecies ON lkpModelers.ModelerID=lkpSpecies.ModelerID ", 
+#                   # "WHERE lkpSpecies.sp_code='", model_species, "'; "
+#                   "WHERE ModelerID = 1;"
+#                   , sep="")
+# sdm.modeler <- dbGetQuery(db, statement = SQLquery)
+
 # NOTE: use column should be populated with 1/0 for sources of data used
 SQLquery <- paste("SELECT sp.sp_code, sr.ProgramName, sr.State ",
                   "FROM lkpSpecies as sp ",

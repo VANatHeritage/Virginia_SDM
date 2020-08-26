@@ -276,7 +276,7 @@ dbWriteTable(db, tmpTableName, backgSubset, overwrite = TRUE)
 qry <- paste0("SELECT * from ", tmpTableName, " INNER JOIN ", nm_bkgPts[2], "_att on ",
               tmpTableName,".fid = ", nm_bkgPts[2], "_att.fid;")
 bgSubsAtt <- dbGetQuery(db, qry)
-# bgSubsAtt$fid..4 <- NULL  # result of join; not sure if this is necesarry but should be harmless
+# bgSubsAtt$fid..4 <- NULL  # result of join; not sure if this is necessary but should be harmless
 fldRm <- (1:length(names(bgSubsAtt)))[names(bgSubsAtt) == 'fid']
 if (length(fldRm) > 1) bgSubsAtt <- bgSubsAtt[,-max(fldRm)]
 

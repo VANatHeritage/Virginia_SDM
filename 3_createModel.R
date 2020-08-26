@@ -574,7 +574,7 @@ dbDisconnect(db)
 ord <- order(EnvVars$impVal, decreasing = TRUE)
 pPlotListLen <- min(c(length(ord), 9))
 
-# sample 1/0 equal to prevalance in df.full
+# sample 1/0 equal to prevalence in df.full
 pplotSampN <- min(c(length(df.full[,1])/10, 10000)) # take 10% of samples, or 10000, whichever is less
 sampprop <- length(df.full$pres[df.full$pres==1])/length(df.full$pres)
 pplotSamp <- c(sample((1:length(df.full$pres))[df.full$pres==1], size = ceiling(pplotSampN*sampprop), replace = F),
