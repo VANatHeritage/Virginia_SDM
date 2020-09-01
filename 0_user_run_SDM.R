@@ -6,22 +6,20 @@ rm(list=ls())
 
 # Step 1: Setting for the model run
 
-# species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/ouptuts)
+# species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/outputs)
 # list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-# TODO: some of these have finished. Mark sdm_status = 1 for these.
 library(RSQLite)
 nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
 db <- dbConnect(SQLite(), nm_db_file)
-spp.list <- sort(dbGetQuery(db, "SELECT sp_code s from lkpSpecies where sdm_status = 1 and substr(ELCODE, 1, 1) = 'P';")$s)
+spp.list <- sort(dbGetQuery(db, "SELECT sp_code s from lkpSpecies where modtype = 'T' AND sdm_status = 1;")$s)
 dbDisconnect(db)
 rm(nm_db_file, db)
 
 # manual list
-# spp.list <- c("caresp2", "chenfogg", "lilipyro", "stacepli", "violsp1")
+# spp.list <-  c("ammocaud")
 spp.list 
 for (model_species in spp.list) {
 
-  # model_species <- "isotmede"
   print(model_species)
   
   # loc_scripts is your repository. Make sure your git repository is set to correct branch
@@ -54,9 +52,9 @@ for (model_species in spp.list) {
   project_blurb <- ""
   
   # list non-standard variables to add to model run. Need to be already attributed in background points
-  add_vars = NULL # c("apiDistInt")
+  add_vars = NULL  # c("apiDistInt")
   # list standard variables to exclude from model run
-  remove_vars = NULL
+  remove_vars = NULL  # c("impsur1", "impsur10", "impsur100") 
   # do you want to stop execution after each modeling step (script)?
   prompt = F
   
