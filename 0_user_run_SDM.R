@@ -35,7 +35,7 @@ for (model_species in spp.list) {
   # Name of background/envvars sqlite geodatabase, and base table name (2 length vector)
   nm_bkgPts <- c(here("_data","env_vars","tabular", "background.sqlite"), "background_VA") # last updated 2020-06-10
   # HUC spatial data set (shapefile) that is subsetted and used to define modeling area//range
-  nm_HUC_file <- here("_data","other_spatial","feature","WBDHU10_HR.shp")
+  nm_HUC_file <- here("_data","other_spatial","feature","WBDHU10_HR.gpkg")
   # map reference boundaries
   #nm_refBoundaries = here("_data","other_spatial","feature", "US_States.shp")  # background grey reference lines in map
   nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp")
@@ -197,6 +197,3 @@ for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 # if debugging script 4 or later, also load the output rdata file
 model_rdata <- fn_args$modelrun_meta_data$model_run_name
 load(here("_data","species",model_species,"outputs","rdata",paste0(model_rdata, ".Rdata")))
-
-source("D:/SDM/all_projects/4b_thresholdModel.R", local=TRUE)
-rm(list=ls())

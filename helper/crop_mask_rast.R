@@ -16,7 +16,7 @@ rm(db)
 
 # now get that info spatially
 # nm_range <- nm_HUC_file
-qry <- paste("SELECT * from ", gsub('.shp$', '', basename(nm_HUC_file)),
+qry <- paste("SELECT * from ", strsplit(basename(nm_HUC_file), ".", fixed = T)[[1]][1],
              " where HUC10 IN ('", paste(hucList, collapse = "', '"), "')", sep = "")
 hucRange <- st_zm(st_read(nm_HUC_file, query = qry))
 
