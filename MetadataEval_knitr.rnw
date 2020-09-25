@@ -29,7 +29,7 @@
 %add footers
 \cfoot{
 \small   %small font. The double slashes is newline in fancyhdr
-Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}).
+Species habitat model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}).
 }
 \rfoot{p. \thepage}
 
@@ -41,7 +41,7 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
 \noindent
 \begin{minipage}[b]{4.75in}   %everything in this minipage will be adjacent, left of the thermometer
   \LARGE \textit{\Sexpr{as.character(ElementNames$SciName)}} \\ 
-  \normalsize Species Distribution Model (SDM) assessment metrics and metadata \\
+  \normalsize Species Habitat Model (SHM) assessment metrics and metadata \\
   Common name: \href{\Sexpr{as.character(NSurl)}}{\Sexpr{as.character(ElementNames$CommName)}}  \\
   NatureServe Grank/Srank: \Sexpr{ paste0(paste(as.character(ElementNames$g_rank),"-",as.character(grank_desc[[2]]), sep=""), " / ",
     paste(as.character(ElementNames$s_rank),"-",as.character(srank_desc[[2]]), sep=""))}\\
@@ -87,7 +87,7 @@ Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\tex
 \Sexpr{as.character(project_overview)}
 \smallskip
 \noindent
-This SDM incorporates the number of known and background locations indicated in Table 1, modeled with the random forests routine {\protect\NoHyper\cite{breiman2001, iverson2004}\protect\endNoHyper} in the R statistical environment {\protect\NoHyper\cite{liaw2002, r}\protect\endNoHyper}. We validated the model by jackknifing (also called leave-one-out {\protect\NoHyper\cite{fielding1997, fielding2002, pearson2007}\protect\endNoHyper}) by \Sexpr{tolower(as.character(group$JackknType))} for a total of \Sexpr{length(group$vals)} groups. The statistics in Table 2 report the mean and variance of validation statistics for these jackknifing runs.\\
+This SHM incorporates the number of known and background locations indicated in Table 1, modeled with the random forests routine {\protect\NoHyper\cite{breiman2001, iverson2004}\protect\endNoHyper} in the R statistical environment {\protect\NoHyper\cite{liaw2002, r}\protect\endNoHyper}. We validated the model by jackknifing (also called leave-one-out {\protect\NoHyper\cite{fielding1997, fielding2002, pearson2007}\protect\endNoHyper}) by \Sexpr{tolower(as.character(group$JackknType))} for a total of \Sexpr{length(group$vals)} groups. The statistics in Table 2 report the mean and variance of validation statistics for these jackknifing runs.\\
 \medskip
 \small
 \begin{minipage}[t]{3in}
@@ -310,7 +310,7 @@ Figure 3. Partial dependence plots for the \Sexpr{as.character(length(pPlots))} 
 \medskip
 \medskip
 \noindent
-Species distribution model outputs display the probability (0-1) of a location (i.e. stream reach or raster cell) having similar environmental conditions in comparison to known presence locations. No model will ever depict sites where a targeted element will occur with certainty, it can \textit{only} depict locations it interprets as appropriate habitat for the targeted element. The delineation of suitable habitats is made by the selection of a threshold value, where locations with values above the threshold are designated as likely suitable habitat, and those with values below the threshold may be unsuitable. Threshold values are often statistically calculated. SDMs can be used in many ways and the depiction of appropriate habitat should be varied depending on intended use. For targeting field surveys, an SDM may be used to refine the search area; users should always employ additional GIS tools to further direct search efforts. A lower threshold depicting more area may be appropriate to use in this case. For a more conservative depiction of suitable habitat that shows less area, a higher threshold may be more appropriate. Different thresholds for this model (full model) are described in Table 3.
+Species habitat model outputs display the probability (0-1) of a location (i.e. stream reach or raster cell) having similar environmental conditions in comparison to known presence locations. No model will ever depict sites where a targeted element will occur with certainty, it can \textit{only} depict locations it interprets as appropriate habitat for the targeted element. The delineation of suitable habitats is made by the selection of a threshold value, where locations with values above the threshold are designated as likely suitable habitat, and those with values below the threshold may be unsuitable. Threshold values are often statistically calculated. SHMs can be used in many ways and the depiction of appropriate habitat should be varied depending on intended use. For targeting field surveys, an SHM may be used to refine the search area; users should always employ additional GIS tools to further direct search efforts. A lower threshold depicting more area may be appropriate to use in this case. For a more conservative depiction of suitable habitat that shows less area, a higher threshold may be more appropriate. Different thresholds for this model (full model) are described in Table 3.
 
 \medskip
 \noindent
@@ -332,7 +332,7 @@ Table 3. Thresholds {\protect\NoHyper\cite{LiuEtAl2005, LiuEtAl2015}\protect\end
 \bigskip
 \noindent
 \textbf{Model Evaluation and Intended Use} \\\\
-All SDMs are sensitive to data inputs and methodological choices. Table 4 presents scoring of modeling factors based on the model evaluation rubric presented in Sofaer et al. 2019 {\protect\NoHyper\cite{SofaerEtAl2019}\protect\endNoHyper}. \Sexpr{as.character(project_blurb)}
+All SHMs are sensitive to data inputs and methodological choices. Table 4 presents scoring of modeling factors based on the model evaluation rubric presented in Sofaer et al. 2019 {\protect\NoHyper\cite{SofaerEtAl2019}\protect\endNoHyper}. \Sexpr{as.character(project_blurb)}
 \\
 \smallskip
 \pagebreak
@@ -479,7 +479,7 @@ Figure 4. A generalized view of the model predictions throughout the modeled are
 \normalsize
 \pagebreak
 
-This distribution model would not have been possible without data sharing among organizations. Other data sets and sources may have been evaluated, but this final model includes data from these sources:
+This habitat model would not have been possible without data sharing among organizations. Other data sets and sources may have been evaluated, but this final model includes data from these sources:
 \begin{itemize}
     \setlength{\itemsep}{0pt}
     \setlength{\parskip}{0pt}
@@ -495,7 +495,7 @@ for(i in 1:length(sdm.dataSources$ProgramName)){
 
 \medskip
 \noindent
-This model was built using a methodology developed through collaboration among the Florida Natural Areas Inventory, the New York Natural Heritage Program, the Pennsylvania Natural Heritage Program, and the Virginia Natural Heritage Program, all member programs of the NatureServe Network. It is one of a suite of species distribution models developed using the same methods, scripts, and environmental data sets. Our goal was to be consistent and transparent in our methodology, validation, and output.
+This model was built using a methodology developed through collaboration among the Florida Natural Areas Inventory, the New York Natural Heritage Program, the Pennsylvania Natural Heritage Program, and the Virginia Natural Heritage Program, all member programs of the NatureServe Network. It is one of a suite of species habitat models developed using the same methods, scripts, and environmental data sets. Our goal was to be consistent and transparent in our methodology, validation, and output.
 
 \medskip
 \noindent
@@ -505,8 +505,8 @@ This model was built using a methodology developed through collaboration among t
 \includegraphics[width=1.0\linewidth]{../../../../../VANHPLogo}%png logo file at repository root
 \end{minipage}%
 \begin{minipage}[c]{0.85\linewidth}
-\hangindent=0.5cm Please cite this document and its associated SDM as: \\
-Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species distribution model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Virginia Department of Conservation and Recreation - Division of Natural Heritage, Richmond, VA.
+\hangindent=0.5cm Please cite this document and its associated SHM as: \\
+Virginia Natural Heritage Program. \Sexpr{format(Sys.Date(), "%Y")}. Species habitat model for \Sexpr{as.character(ElementNames$CommName)} (\textit{\Sexpr{as.character(ElementNames$SciName)}}). Created on \Sexpr{format(Sys.Date(), "%d %b %Y")}. Virginia Department of Conservation and Recreation - Division of Natural Heritage, Richmond, VA.
 \end{minipage}
 }
 
