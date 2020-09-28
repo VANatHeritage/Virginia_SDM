@@ -179,28 +179,6 @@ for (i in names(sampSizeVec)) if (sampSizeVec[i] >= totPts[i]) sampSizeVec[i] <-
 sampSizeVec["pseu-a"] <- sum(sampSizeVec[!names(sampSizeVec) %in% "pseu-a"])
 
 ##
-# tune mtry ----
-# run through mtry twice
-mtry <- NULL
-while (is.null(mtry)) {
-try({
-x <- tuneRF(df.full[,indVarCols],
-             y=df.full[,depVarCol],
-             ntreeTry = 300, stepFactor = 2, mtryStart = 6,
-            strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
-
-newTry <- x[x[,2] == min(x[,2]),1]
-
-y <- tuneRF(df.full[,indVarCols],
-            y=df.full[,depVarCol],
-            ntreeTry = 300, stepFactor = 1.5, mtryStart = max(newTry),
-            strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
-
-mtry <- max(y[y[,2] == min(y[,2]),1])
-rm(x,y)
-})
-}
-##
 # Remove the least important env vars ----
 ##
 
@@ -209,7 +187,7 @@ rf.find.envars <- randomForest(df.full[,indVarCols],
                         y=df.full[,depVarCol],
                         importance=TRUE,
                         ntree=ntrees,
-                        mtry=mtry,
+                        # mtry=mtry,
                         strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
 
 impvals <- importance(rf.find.envars, type = 1)
@@ -242,6 +220,29 @@ indVarCols <- c(6:length(names(df.full)))
 ##
 # code above is for removing least important env vars
 ##
+
+##
+# tune mtry ----
+# NOTE: 2020-09-25: moved this after variable reduction, so mtry is tuned on final variable set
+# run through mtry twice
+mtry <- NULL
+while (is.null(mtry)) {
+  try({
+    x <- tuneRF(df.full[,indVarCols],
+                y=df.full[,depVarCol],
+                ntreeTry = 300, stepFactor = 2, mtryStart = 6,
+                strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
+    newTry <- x[x[,2] == min(x[,2]),1]
+    
+    y <- tuneRF(df.full[,indVarCols],
+                y=df.full[,depVarCol],
+                ntreeTry = 300, stepFactor = 1.5, mtryStart = max(newTry),
+                strata = df.full[,cv.by], sampsize = sampSizeVec, replace = TRUE)
+    
+    mtry <- max(y[y[,2] == min(y[,2]),1])
+    rm(x,y)
+  })
+}
 
 # prep for validation loop ----
 #now that entire set is cleaned up, split back out to use any of the three DFs below

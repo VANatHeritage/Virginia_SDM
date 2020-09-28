@@ -8,18 +8,19 @@ rm(list=ls())
 
 # species code (from lkpSpecies in modelling database. This will be the new folder name containing inputs/outputs)
 # list.files(here("_data","occurrence"), full.names = F, recursive = F, pattern = ".shp$")
-library(RSQLite)
-nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
-db <- dbConnect(SQLite(), nm_db_file)
-spp.list <- sort(dbGetQuery(db, "SELECT sp_code s from lkpSpecies where modtype = 'T' AND sdm_status = 1;")$s)
-dbDisconnect(db)
-rm(nm_db_file, db)
+# library(RSQLite)
+# nm_db_file <- here("_data", "databases", "SDM_lookupAndTracking.sqlite")
+# db <- dbConnect(SQLite(), nm_db_file)
+# spp.list <- sort(dbGetQuery(db, "SELECT sp_code s from lkpSpecies where modtype = 'T' AND sdm_status = 1;")$s)
+# dbDisconnect(db)
+# rm(nm_db_file, db)
 
 # manual list
 # spp.list <-  c("ammocaud")
-spp.list 
-for (model_species in spp.list) {
+# spp.list 
 
+# for (model_species in spp.list) {
+  model_species <- "ammocaud"
   print(model_species)
   
   # loc_scripts is your repository. Make sure your git repository is set to correct branch
@@ -41,7 +42,7 @@ for (model_species in spp.list) {
   nm_refBoundaries = here("_data","other_spatial", "feature", "sdmVA_pred_20170131.shp")
   
   # project overview - this appears in the first paragraph of the metadata
-  project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2020)."
+  project_overview = "The following metadata describes a Species Habitat Model (SHM) for a species tracked by the Virginia Natural Heritage Program (2020)."
   # model comment in database
   model_comments = ""
   # comment printed in PDF metadata
@@ -52,9 +53,10 @@ for (model_species in spp.list) {
   project_blurb <- ""
   
   # list non-standard variables to add to model run. Need to be already attributed in background points
-  add_vars = NULL  # c("apiDistInt")
+  add_vars = c('cshor1', 'ceshb1', 'ceemg1', 'cpfor1', 'cpshb1', 'cpemg1',
+               'cdmix1', 'cemix1', 'copen1', 'cshbscb1', 'cwater1') # c("ceherb1", "ceherb10", "ceherb100")  # c("apiDistInt")
   # list standard variables to exclude from model run
-  remove_vars = NULL  # c("impsur1", "impsur10", "impsur100") 
+  remove_vars = c("nlcd")  # c("impsur1", "impsur10", "impsur100") 
   # do you want to stop execution after each modeling step (script)?
   prompt = F
   
@@ -102,7 +104,7 @@ for (model_species in spp.list) {
   dbDisconnect(db)
   rm(nm_db_file, db)
 
-}
+# }
 
 
 
@@ -129,7 +131,7 @@ library(here)
 rm(list=ls())
 
 # set project folder and species code for this run
-model_species <- "bazznudi"
+model_species <- "ammocaud"
 loc_model <- here("_data", "species")
 
 # set wd and load function
@@ -145,8 +147,8 @@ run_SDM(
   begin_step = "2",
   model_species = model_species,
   loc_model = loc_model,
-  add_vars = c("Isotherm","radequinx"),
-  remove_vars = c("elevx10","radwinsol"),
+  # add_vars = c("Isotherm","radequinx"),
+  # remove_vars = c("elevx10","radwinsol"),
   prompt = F
 )
 
@@ -165,14 +167,14 @@ run_SDM(
   loc_model = loc_model,
   model_comments = "",
   metaData_comments = "",
-  project_overview = "The following metadata describes the SDM for a species tracked by the Virginia Natural Heritage Program (2020).",
+  # project_overview = "The following metadata describes a Species Habitat Model (SHM) for a species tracked by the Virginia Natural Heritage Program (2020).",
   project_blurb = ""
 )
 
 run_SDM(
   begin_step = "5",
   model_species = model_species,
-  loc_model = loc_model
+  loc_model = loc_model,
 )
 
 
@@ -190,7 +192,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "caresp2"
+model_species <- "ammocaud"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 
