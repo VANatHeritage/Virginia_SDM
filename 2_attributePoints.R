@@ -73,21 +73,33 @@ gridlistSub <- unique(shrtNms$gridName[shrtNms$use==1])
 
 ## account for add/remove vars. All matching done on the fly with tolower; actual values do not change.
 if (!is.null(add_vars)) {
-  if (!all(tolower(add_vars) %in% tolower(shrtNms$gridName))) {
-    stop("Some environmental variables listed in `add_vars` were not found in `nm_EnvVars` dataset: ",
-         paste(add_vars[!tolower(add_vars) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
+  add_vars2 <- c()
+  for (a in add_vars) {
+    to.add <- unique(shrtNms$gridName[grepl(paste0("^", a), shrtNms$gridName)])
+    if (length(to.add) == 0) message("add_vars: No variables matched the pattern: `", a, "`.") else 
+      add_vars2 <- unique(c(add_vars2, to.add))
   }
+  # if (!all(tolower(add_vars) %in% tolower(shrtNms$gridName))) {
+  #  stop("Some environmental variables listed in `add_vars` were not found in `nm_EnvVars` dataset: ",
+  #       paste(add_vars[!tolower(add_vars) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
+  #}
   # add the variables
-  add_vars_df <- shrtNms[tolower(shrtNms$gridName) %in% tolower(add_vars),c("gridName")]
+  add_vars_df <- unique(shrtNms[tolower(shrtNms$gridName) %in% tolower(add_vars2), c("gridName")])
   gridlistSub <- c(gridlistSub, add_vars_df)
 }
 if (!is.null(remove_vars)) {
-  if (!all(tolower(remove_vars) %in% tolower(shrtNms$gridName))) {
-    message("Note: Some environmental variables listed in `remove_vars` were not found in the `nm_EnvVars` dataset: ",
-            paste(remove_vars[!tolower(remove_vars) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
-  } 
+  remove_vars2 <- c()
+  for (a in remove_vars) {
+    to.remove <- unique(shrtNms$gridName[grepl(paste0("^", a), shrtNms$gridName)])
+    if (length(to.remove) == 0) message("remove_vars: No variables matched the pattern: `", a, "`.") else 
+      remove_vars2 <- unique(c(remove_vars2, to.remove))
+  }
+  # if (!all(tolower(remove_vars) %in% tolower(shrtNms$gridName))) {
+  #  message("Note: Some environmental variables listed in `remove_vars` were not found in the `nm_EnvVars` dataset: ",
+  #          paste(remove_vars[!tolower(remove_vars2) %in% tolower(shrtNms$gridName)], collapse = ", "), ".")
+  #} 
   # remove the variables
-  gridlistSub <- gridlistSub[!tolower(gridlistSub) %in% tolower(remove_vars)]
+  gridlistSub <- gridlistSub[!tolower(gridlistSub) %in% tolower(remove_vars2)]
 }
 
 # remove duplicates, then subset
