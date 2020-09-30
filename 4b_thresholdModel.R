@@ -146,6 +146,18 @@ cutList$eqss <- list("value" = eqss, "code" = "eqSS",
 
 # collate and write to DB ----
 
+# load the prediction grid
+ras <- raster(paste0("model_predictions/", model_run_name, ".tif"))
+
+# MCV (using polygons; prediction values, so not calculating captured counts)
+presPolys <- st_read(paste0(loc_model, "/", model_species,"/inputs/presence/", baseName, "_expl.shp"))
+presRast <- fasterize::fasterize(presPolys, ras)
+mcv <- minValue(mask(ras, presRast))
+cutList$mcv <- list("value" = mcv, "code" = "MCV",
+     "capturedEOs" = NA,
+     "capturedPolys" = NA,
+     "capturedPts" = NA)
+
 # number of thresholds to write to the db
 numThresh <- length(cutList)
 
@@ -179,9 +191,6 @@ t2 <- t2[!is.na(t2)]
 t3 <- data.frame(cutCodes = unlist(lapply(t2, FUN = function(x) {paste(allThresh$cutCode[allThresh$cutValue == x], collapse = ";")})),
                  cutValue = t2,
                  order = 1:length(t2))
-
-# load the prediction grid
-ras <- raster(paste0("model_predictions/", model_run_name, ".tif"))
 
 # reclassify the raster based on the threshold into binary 0/1
 m <- cbind(
