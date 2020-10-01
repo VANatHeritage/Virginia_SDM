@@ -1,5 +1,6 @@
 # File: user_run_SDM.r
 # Purpose: Run a new, full SDM model (all steps)
+# source("helper/pkg_check.R")
 
 library(here)
 rm(list=ls())
@@ -53,10 +54,10 @@ rm(list=ls())
   project_blurb <- ""
   
   # list non-standard variables to add to model run. Need to be already attributed in background points
-  add_vars = c('cshor1', 'ceshb1', 'ceemg1', 'cpfor1', 'cpshb1', 'cpemg1',
-               'cdmix1', 'cemix1', 'copen1', 'cshbscb1', 'cwater1') # c("ceherb1", "ceherb10", "ceherb100")  # c("apiDistInt")
+  add_vars = NULL # c('cshor1', 'ceshb1', 'ceemg1', 'cpfor1', 'cpshb1', 'cpemg1',
+               # 'cdmix1', 'cemix1', 'copen1', 'cshbscb1', 'cwater1') # c("ceherb1", "ceherb10", "ceherb100")  # c("apiDistInt")
   # list standard variables to exclude from model run
-  remove_vars = c("nlcd")  # c("impsur1", "impsur10", "impsur100") 
+  remove_vars = NULL # c("nlcd")  # c("impsur1", "impsur10", "impsur100") 
   # do you want to stop execution after each modeling step (script)?
   prompt = F
   
@@ -131,7 +132,7 @@ library(here)
 rm(list=ls())
 
 # set project folder and species code for this run
-model_species <- "ammocaud"
+model_species <- "pletsher"
 loc_model <- here("_data", "species")
 
 # set wd and load function
@@ -148,8 +149,8 @@ run_SDM(
   model_species = model_species,
   loc_model = loc_model,
   # add_vars = c("Isotherm","radequinx"),
-  # remove_vars = c("elevx10","radwinsol"),
-  prompt = F
+  remove_vars = c("nlcdshb"),
+  nm_HUC_file = here("_data","other_spatial","feature","WBDHU10_HR.gpkg")
 )
 
 # example pick-up a model run at step 3; uses most recent settings from previous run_SDM run
@@ -192,7 +193,7 @@ rm(list=ls())
 # so you need to have started a run_SDM() run in step 2 first.
 
 # for scripts 1-3, run just the following 3 lines
-model_species <- "ammocaud"
+model_species <- "pletsher"
 load(here("_data","species",model_species,"runSDM_paths.Rdata"))
 for(i in 1:length(fn_args)) assign(names(fn_args)[i], fn_args[[i]])
 

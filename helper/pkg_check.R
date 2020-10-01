@@ -10,7 +10,7 @@ for (r in r_files) {
   rl2 <- paste(rl[grepl("library(", rl, fixed = T)], " ", sep = "")
   if (length(rl2) > 0) {
     rl3 <- regmatches(rl2, regexec("library\\((.*)\\)", rl2))
-    rllist[[r]] <- unlist(lapply(rl3, function(x) gsub("[^[:alnum:]]", "", x[length(x)])))
+    rllist[[r]] <- unlist(lapply(rl3, function(x) gsub("[^[:alnum:]|\\.]", "", x[length(x)])))
   }
 }
 pkg_list <- sort(unique(unlist(rllist)))
